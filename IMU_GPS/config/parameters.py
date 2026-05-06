@@ -1,8 +1,15 @@
 # Paramètres de l'IMU
-ACCEL_RANGE = 4
+ACCEL_RANGE = 2
 ACCEL_FREQ = 26
-GYRO_RANGE = 500
+GYRO_RANGE = 250
 GYRO_FREQ = 26
 
 # Paramètres du GNSS
 MODE_GNSS = 'gps_beidou_glonass'
+
+#Moyennes pour calibration de l'IMU
+#{['accel z']:0.0927769772972973, ['accel y'] : 0.03297495135135133,
+#['accel x'] : 1.0048830054054054, ['gyro z']: -0.06245135135135136, 
+#['gyro y']: -0.07828648648648649, ['gyro x']:-0.22172972972972976}
+liste_moyennes_IMU = [1.0048830054054054, 0.03297495135135133, 0.0927769772972973, -0.22172972972972976,
+                        -0.07828648648648649, -0.06245135135135136]

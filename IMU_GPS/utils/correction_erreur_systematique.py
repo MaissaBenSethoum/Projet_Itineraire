@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import argparse
+from config import liste_moyennes_IMU
 
 
 def  calul_moyenne_colonne(df, col):
@@ -36,13 +37,29 @@ def transformation_dataframe_csv(df, file_path):
     df.to_csv(file_path, index=False)
 
 if __name__ == "__main__":
-  arg = argparse.ArgumentParser(description="Correction de l'erreur systématique d'un fichier csv")
-  arg.add_argument("file_path", type=str, help="Chemin du fichier csv à corriger")
-  arg.add_argument("-o", "--output", type=str, help="Chemin du fichier csv de sortie (optionnel)")
-  args = arg.parse_args()
-  df = transformation_csv_dataframe(args.file_path)
-  
-  for i in range(7, len(df.columns)):
-    print(f"La moyenne de la colonne {df.columns[i]} est : {calul_moyenne_colonne(df, df.columns[i])}")
-  for i in range(7, len(df.columns)):
-    print(f"L'écart type de la colonne {df.columns[i]} est : {calcul_ecart_type_colonne(df, df.columns[i])}")
+    arg = argparse.ArgumentParser(description="Correction de l'erreur systématique d'un fichier csv")
+    arg.add_argument("file_path", type=str, help="Chemin du fichier csv à corriger")
+    arg.add_argument("-o", "--output", type=str, help="Chemin du fichier csv de sortie (optionnel)")
+    args = arg.parse_args()
+    df = transformation_csv_dataframe(args.file_path)
+
+    # Colonnes IMU à corriger
+    colonnes_imu = [
+        "Accel X",
+        "Accel Y",
+        "Accel Z",
+        "Gyro X",
+        "Gyro Y",
+        "Gyro Z"
+    ]
+
+    # Correction des biais
+    for col, moyenne in zip(colonnes_imu, liste_moyennes_IMU):
+        df = correction_syst_col(df, col, moyenne)
+
+    # Ajout extension csv si oubliée
+    if args.output is not None and not args.output.endswith(".csv"):
+        args.output += ".csv"
+
+    # Sauvegarde
+    transformation_dataframe_csv(df, args.output)
