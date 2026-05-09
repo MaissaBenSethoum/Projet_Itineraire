@@ -67,17 +67,30 @@ def clean_rows(rows):
 
 def convert_units(rows):
     """Convertit les champs de texte en nombres et unités exploitables."""
-    pass
+    converted = []
 
+    for row in rows:
+        new_row = dict(row)
+        new_row["Timestamp"] = _parse_float(row.get("Timestamp"), default=0.0)
+        new_row["Latitude"] = _parse_float(row.get("Latitude"))
+        new_row["Longitude"] = _parse_float(row.get("Longitude"))
+        new_row["Altitude"] = _parse_float(row.get("Altitude"))
+        new_row["Nb Satellites"] = _parse_float(row.get("Nb Satellites"), default=0)
+        new_row["Accel X"] = _parse_float(row.get("Accel X"))
+        new_row["Accel Y"] = _parse_float(row.get("Accel Y"))
+        new_row["Accel Z"] = _parse_float(row.get("Accel Z"))
+        new_row["Gyro X"] = _parse_float(row.get("Gyro X"))
+        new_row["Gyro Y"] = _parse_float(row.get("Gyro Y"))
+        new_row["Gyro Z"] = _parse_float(row.get("Gyro Z"))
+        converted.append(new_row)
 
-def synchronize_timestamps(rows):
-    """Synchronise les mesures IMU et GPS sur des instants communs."""
-    pass
+    return converted
 
 
 def filter_imu_noise(rows):
     """Filtre le bruit des mesures IMU si nécessaire."""
-    pass
+    # TODO : implémenter un filtrage simple (ex: moyenne mobile) si besoin
+    return rows
 
 
 def preprocess_imu_gps_csv(input_csv, output_csv):
@@ -86,7 +99,6 @@ def preprocess_imu_gps_csv(input_csv, output_csv):
 
     rows = clean_rows(rows)
     rows = convert_units(rows)
-    rows = synchronize_timestamps(rows)
     rows = filter_imu_noise(rows)
 
     write_imu_gps_csv(rows, output_csv)
