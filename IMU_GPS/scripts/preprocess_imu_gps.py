@@ -8,14 +8,14 @@ def main():
     )
 
     parser.add_argument(
-        "--input",
+        "input",
         type=str,
         default="data/acquisition_imu_gps.csv",
         help="Chemin du CSV brut généré par l'acquisition."
     )
 
     parser.add_argument(
-        "--output",
+        "output",
         type=str,
         default="data/preprocessed_imu_gps.csv",
         help="Chemin du CSV prétraité à générer."

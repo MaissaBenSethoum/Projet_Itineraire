@@ -2,6 +2,7 @@ import pandas as pd
 import xml.etree.ElementTree as ET
 import re
 from datetime import datetime
+import argparse
 
 def convert_gpx_to_csv(gpx_file, csv_file):
     """
@@ -79,3 +80,11 @@ def convert_csv_to_gpx(csv_file, gpx_file):
     tree = ET.ElementTree(gpx)
     tree.write(gpx_file, encoding="utf-8", xml_declaration=True)
     print(f"Conversion terminée ! Fichier enregistré : {gpx_file}")
+
+
+if __name__ == "__main__":
+    arg = argparse.ArgumentParser(description="Convertisseur entre fichiers GPX et CSV")
+    arg.add_argument("input_file", type=str, help="Chemin du fichier d'entrée (GPX ou CSV)")
+    arg.add_argument("output_file", type=str, help="Chemin du fichier de sortie (CSV ou GPX)")
+    args = arg.parse_args()
+    convert_gpx_to_csv(args.input_file, args.output_file) if args.input_file.endswith('.gpx') else convert_csv_to_gpx(args.input_file, args.output_file)
