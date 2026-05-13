@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 class EKF:
 
@@ -20,7 +21,7 @@ class EKF:
 
     def F_jacobienne(self, dt):
 
-        x, y, v, theta = self.x.flatten()
+        x, y, v , theta = self.x.flatten()
 
         F = np.eye(4)
 
@@ -42,7 +43,7 @@ class EKF:
         x = x + v * np.cos(theta) * dt
         y = y + v * np.sin(theta) * dt
         v = v + a * dt
-        theta = theta + np.radians(w) * dt
+        theta = theta + w * dt
 
         self.x = np.array([[x], [y], [v], [theta]])
 
@@ -70,7 +71,7 @@ def lat_lon_to_meters(lat, lon, ref_lat, ref_lon):
     x = (lon - ref_lon) * 111139 * np.cos(np.radians(ref_lat))
     return x, y
 
-df = pd.read_csv("data/test_corrige_2_26_250_26.csv")
+df = pd.read_csv("IMU_GPS/data/test_corrige_2_26_250_26.csv")
 
 ref_lat, ref_lon = df['Latitude'].iloc[0], df['Longitude'].iloc[0]
 ekf = EKF(dt_initial=0.04)
@@ -83,9 +84,9 @@ for i in range(1, len(df)):
     dt = df['Timestamp'].iloc[i] - df['Timestamp'].iloc[i-1]
     
     #Entrées capteurs (IMU)
-    # On prend l'accélération X et le Gyro Z 
-    accel = df['Accel X'].iloc[i]  
-    gyro_z = df['Gyro Z'].iloc[i]
+    # On prend l'accélération X et le Gyro Z (rotation lacet)
+    accel = df['Accel X'].iloc[i] * 9.81
+    gyro_z = np.radians(df['Gyro Z'].iloc[i])
     
     #Prédiction
     ekf.prediction(accel, gyro_z, dt)
@@ -99,4 +100,23 @@ for i in range(1, len(df)):
 
 # Conversion des résultats en DataFrame pour analyse
 res_df = pd.DataFrame(results, columns=['X_m', 'Y_m', 'V_ms', 'Theta_rad'])
-print(res_df.head())
+
+raw_gps_x = []
+raw_gps_y = []
+for i in range(len(df)):
+    mx, my = lat_lon_to_meters(df['Latitude'].iloc[i], df['Longitude'].iloc[i], ref_lat, ref_lon)
+    raw_gps_x.append(mx)
+    raw_gps_y.append(my)
+
+plt.figure(figsize=(10, 6))
+plt.plot(raw_gps_x, raw_gps_y, 'r--', alpha=0.5, label="GPS Brut (Bruité)")
+plt.plot(res_df['X_m'], res_df['Y_m'], 'b-', label="Trajectoire Filtrée (EKF)")
+plt.legend()
+plt.title("Comparaison GPS Brut vs Filtre de Kalman")
+plt.xlabel("X (mètres)")
+plt.ylabel("Y (mètres)")
+plt.grid(True)
+plt.show()
+
+
+
