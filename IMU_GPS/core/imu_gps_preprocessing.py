@@ -1,5 +1,6 @@
 import csv
 from pathlib import Path
+import pandas as pd
 
 
 def read_imu_gps_csv(csv_path):
@@ -103,3 +104,9 @@ def preprocess_imu_gps_csv(input_csv, output_csv):
 
     write_imu_gps_csv(rows, output_csv)
     return output_csv
+
+def preprocess_imu_gps_df(input_df):
+    rows = input_df.to_dict(orient='records')
+    rows = clean_rows(rows)
+    rows = filter_imu_noise(rows)
+    return pd.DataFrame(rows)

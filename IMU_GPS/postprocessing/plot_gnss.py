@@ -3,32 +3,21 @@ import pandas as pd
 import folium
 import os
 
-def plot_GNSS(file_path, output=None):
+def plot_GNSS(df, output):
     """
-    Fonction pour tracer les données GNSS d'un parcours sur une carte OpenStreetMap, enregistrée dans un fichier HTML.
+    Trace les données GNSS d'un DataFrame sur une carte OpenStreetMap.
     
     Arguments:
-    - file_path: Le chemin du fichier CSV contenant les données GNSS.
+    - df     : DataFrame contenant les colonnes 'Latitude' et 'Longitude'
+    - output : Chemin du fichier HTML de sortie
     """
-    out_path,filename = os.path.split(file_path)
-    data = pd.read_csv(file_path)
-
-    m = folium.Map(location=[data['Latitude'][0], data['Longitude'][0]], zoom_start=12)
-
-    points = list(zip(data['Latitude'], data['Longitude']))
+    m = folium.Map(location=[df['Latitude'].iloc[0], df['Longitude'].iloc[0]], zoom_start=12)
+    
+    points = list(zip(df['Latitude'], df['Longitude']))
     folium.PolyLine(points, color="blue", weight=2.5, opacity=1).add_to(m)
-
-    if output:
-        if not output.endswith('.html'):
-            output += '.html'
-        m.save(output)
-    else:
-          m.save(os.path.join(out_path, filename.replace('.csv', '.html')))
-    print("Carte générée")
-
-if __name__ == "__main__":
-  parser = argparse.ArgumentParser()
-  parser.add_argument("-o", "--output", type=str, help="Chemin du fichier HTML de sortie (optionnel)")
-  parser.add_argument('path', type=str)
-  args = parser.parse_args()
-  plot_GNSS(args.path,output=args.output)
+    
+    if not output.endswith('.html'):
+        output += '.html'
+    
+    m.save(output)
+    print(f"Carte générée : {output}")
