@@ -42,7 +42,7 @@ class EKF:
         x = x + v * np.cos(theta) * dt
         y = y + v * np.sin(theta) * dt
         v = v + a * dt
-        theta = theta + w * dt
+        theta = theta + np.radians(w) * dt
 
         self.x = np.array([[x], [y], [v], [theta]])
 
@@ -83,8 +83,8 @@ for i in range(1, len(df)):
     dt = df['Timestamp'].iloc[i] - df['Timestamp'].iloc[i-1]
     
     #Entrées capteurs (IMU)
-    # On prend l'accélération X et le Gyro Z (rotation lacet)
-    accel = df['Accel X'].iloc[i]  # Soustraire la gravité si capteur statique
+    # On prend l'accélération X et le Gyro Z 
+    accel = df['Accel X'].iloc[i]  
     gyro_z = df['Gyro Z'].iloc[i]
     
     #Prédiction
@@ -100,9 +100,3 @@ for i in range(1, len(df)):
 # Conversion des résultats en DataFrame pour analyse
 res_df = pd.DataFrame(results, columns=['X_m', 'Y_m', 'V_ms', 'Theta_rad'])
 print(res_df.head())
-
-
-
-
-
-
