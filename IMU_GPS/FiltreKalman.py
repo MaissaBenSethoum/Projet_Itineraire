@@ -9,10 +9,11 @@ class EKF:
         self.x = np.zeros((4, 1))
         self.dt = dt_initial
 
-        self.P = np.eye(4) * 0.1
+        # self.P = np.eye(4) * 0.1
+        self.P = np.diag([10, 10, 5, 1])
 
-        self.Q = np.diag([0.1, 0.1, 0.1, 0.1])
-        self.R = np.diag([3, 3])
+        self.Q = np.diag([0.01, 0.01, 0.5, 0.01])
+        self.R = np.diag([9, 9])
 
         self.H = np.array([
             [1, 0, 0, 0],
@@ -71,7 +72,7 @@ def lat_lon_to_meters(lat, lon, ref_lat, ref_lon):
     x = (lon - ref_lon) * 111139 * np.cos(np.radians(ref_lat))
     return x, y
 
-df = pd.read_csv("IMU_GPS/data/test_corrige_2_26_250_26.csv")
+df = pd.read_csv("IMU_GPS/data/test_traite_2.26_250_26.csv")
 
 ref_lat, ref_lon = df['Latitude'].iloc[0], df['Longitude'].iloc[0]
 ekf = EKF(dt_initial=0.04)
