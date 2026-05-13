@@ -1,6 +1,9 @@
 # Adresses I2C des composants
 LSM6DSO_ADDR = 0x6b               
-LIS3MDL_ADDR = 0x1e               
+LIS3MDL_ADDR = 0x1e   
+
+PORT_BUTTON = 21 # Port GPIO du Bouton
+PORT_LED = 13 # Port GPIO de la LED
 
 # Constantes des registres de configuration de l'IMU (LSM6DSO)
 CTRL1_XL = 0x10                   # Configuration de l'accéléromètre 

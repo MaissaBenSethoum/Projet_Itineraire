@@ -14,7 +14,8 @@ def get_imu_gps_data(
     gyro_freq,
     gnss_addr,
     gnss_mode,
-    csv_out=None):
+    csv_out=None,
+    stop_condition=False):
     """
     Fait l'acquisition simultanée des données IMU et GNSS.
 
@@ -60,7 +61,7 @@ def get_imu_gps_data(
     print("Ctrl+C pour arrêter.")
 
     try:
-        while True:
+        while stop_condition is None or not stop_condition():
             start_time = time.time()
             timestamp = time.time()
 
