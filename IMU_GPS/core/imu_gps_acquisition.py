@@ -15,7 +15,7 @@ def get_imu_gps_data(
     gnss_addr,
     gnss_mode,
     csv_out=None,
-    stop_condition=False):
+    stop_condition=None):
     """
     Fait l'acquisition simultanée des données IMU et GNSS.
 
@@ -107,15 +107,6 @@ def get_imu_gps_data(
                     gyro_z
                 ])
 
-            # Affichage console
-            print("--------------------------------------------------")
-            print(f"Timestamp : {timestamp:.3f}")
-            print(f"GPS valid : {gps_valid}")
-            print(f"Latitude : {latitude}")
-            print(f"Longitude : {longitude}")
-            print(f"Satellites : {nb_satellites}")
-            print(f"Accel : X={accel_x:.3f}, Y={accel_y:.3f}, Z={accel_z:.3f}")
-            print(f"Gyro  : X={gyro_x:.3f}, Y={gyro_y:.3f}, Z={gyro_z:.3f}")
 
             # Respect de la fréquence IMU
             elapsed_time = time.time() - start_time
