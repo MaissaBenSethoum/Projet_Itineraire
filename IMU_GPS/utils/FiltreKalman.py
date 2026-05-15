@@ -75,6 +75,7 @@ def meters_to_lat_lon(x,y,ref_lat, ref_lon):
     lat = ref_lat + y / 111139
     lon = ref_lon + x / (111139 * np.cos(np.radians(ref_lat)))
     return lat, lon
+
 def appliquee_efk(df):
     ref_lat, ref_lon = df['Latitude'].iloc[0], df['Longitude'].iloc[0]
     ekf = EKF(dt_initial=0.04)
@@ -91,7 +92,7 @@ def appliquee_efk(df):
 
         ekf.prediction(accel, gyro_z, dt)
 
-        if pd.notnull(df['Latitude'].iloc[i]) and df['GPS Valid'].iloc[i] == 1:
+        if pd.notnull(df['Latitude'].iloc[i]) and df['GPS Valid'].iloc[i] == "1":
             mx, my = lat_lon_to_meters(df['Latitude'].iloc[i], df['Longitude'].iloc[i], ref_lat, ref_lon)
             ekf.miseAJour(np.array([mx, my]))
 

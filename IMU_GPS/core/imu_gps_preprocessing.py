@@ -88,12 +88,6 @@ def convert_units(rows):
     return converted
 
 
-def filter_imu_noise(rows):
-    """Filtre le bruit des mesures IMU si nécessaire."""
-    # TODO : implémenter un filtrage simple (ex: moyenne mobile) si besoin
-    return rows
-
-
 def preprocess_imu_gps_csv(input_csv, output_csv):
     """Lit un CSV brut, réalise le prétraitement et écrit un CSV de sortie."""
     rows = read_imu_gps_csv(input_csv)
@@ -108,5 +102,5 @@ def preprocess_imu_gps_csv(input_csv, output_csv):
 def preprocess_imu_gps_df(input_df):
     rows = input_df.to_dict(orient='records')
     rows = clean_rows(rows)
-    rows = filter_imu_noise(rows)
+    rows = convert_units(rows)
     return pd.DataFrame(rows)

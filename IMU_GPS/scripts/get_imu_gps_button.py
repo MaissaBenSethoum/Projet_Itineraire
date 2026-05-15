@@ -37,7 +37,7 @@ if __name__ == "__main__":
         button.on_press(demander_arret)
 
         csv_name = (
-            f"data/acq_{ACCEL_RANGE}_{ACCEL_FREQ}_{GYRO_RANGE}_{GYRO_FREQ}.csv"
+            f"../data/acq_{ACCEL_RANGE}_{ACCEL_FREQ}_{GYRO_RANGE}_{GYRO_FREQ}.csv"
         )
 
         get_imu_gps_data(
