@@ -92,7 +92,7 @@ def appliquee_efk(df):
 
         ekf.prediction(accel, gyro_z, dt)
 
-        if pd.notnull(df['Latitude'].iloc[i]) and df['GPS Valid'].iloc[i] == "1":
+        if pd.notnull(df['Latitude'].iloc[i]) and df['GPS Valid'].iloc[i] == 1:
             mx, my = lat_lon_to_meters(df['Latitude'].iloc[i], df['Longitude'].iloc[i], ref_lat, ref_lon)
             ekf.miseAJour(np.array([mx, my]))
 

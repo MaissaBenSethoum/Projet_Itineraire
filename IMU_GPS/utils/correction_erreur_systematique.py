@@ -1,6 +1,6 @@
 import pandas as pd
 import argparse
-from IMU_GPS.config.parameters import BIAIS_IMU
+from config.parameters import BIAIS_IMU
 
 
 def correction_syst_col(df, col, erreur_syst):

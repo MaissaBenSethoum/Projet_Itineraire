@@ -1,8 +1,8 @@
-from IMU_GPS.utils.FiltreKalman import run_kalman
-from IMU_GPS.postprocessing.plot_gnss import plot_GNSS
-from IMU_GPS.core.imu_gps_preprocessing import preprocess_imu_gps_df
-from IMU_GPS.config.parameters import ACCEL_RANGE, ACCEL_FREQ, GYRO_FREQ, GYRO_RANGE
-from IMU_GPS.utils.correction_erreur_systematique import transformation_csv_dataframe, transformation_dataframe_csv,corriger_biais_imu
+from utils.FiltreKalman import run_kalman
+from postprocessing.plot_gnss import plot_GNSS
+from core.imu_gps_preprocessing import preprocess_imu_gps_df
+from config.parameters import ACCEL_RANGE, ACCEL_FREQ, GYRO_FREQ, GYRO_RANGE
+from utils.correction_erreur_systematique import transformation_csv_dataframe, transformation_dataframe_csv,corriger_biais_imu
 import argparse
 def appliqueKalman(savepath,output):
     """fonction qui permet d'appliquer Kalman à un fichier déjà traité"""

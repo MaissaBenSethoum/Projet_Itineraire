@@ -46,26 +46,23 @@ def clean_rows(rows):
     valid_flags = {"1", "True", "true", "yes", "OK"}
 
     for row in rows:
-        gps_valid = str(row.get("GPS Valid", "0")).strip()
-        if gps_valid not in valid_flags:
-            continue
-
+        gps_valid = str(row.get("GPS Valid", "0")).strip() in valid_flags
         lat = _parse_float(row.get("Latitude"))
         lon = _parse_float(row.get("Longitude"))
-        if lat is None or lon is None:
-            continue
 
-        if last_lat is not None and last_lon is not None:
-            if abs(lat - last_lat) > max_gps_jump or abs(lon - last_lon) > max_gps_jump:
-                continue
+        if gps_valid and lat is not None and lon is not None:
+            if last_lat is not None and last_lon is not None:
+                if abs(lat - last_lat) > max_gps_jump or abs(lon - last_lon) > max_gps_jump:
+                    row = dict(row)
+                    row["GPS Valid"] = 0
+                    cleaned.append(row)
+                    continue
+            last_lat = lat
+            last_lon = lon
 
         cleaned.append(row)
-        last_lat = lat
-        last_lon = lon
 
     return cleaned
-
-
 def convert_units(rows):
     """Convertit les champs de texte en nombres et unités exploitables."""
     converted = []
@@ -78,6 +75,8 @@ def convert_units(rows):
         new_row["Altitude"] = _parse_float(row.get("Altitude"))
         new_row["Nb Satellites"] = _parse_float(row.get("Nb Satellites"), default=0)
         new_row["Accel X"] = _parse_float(row.get("Accel X"))
+        gps_valid_raw = row.get("GPS Valid", "0")                                                                                                                                              
+        new_row["GPS Valid"] = 1 if str(gps_valid_raw).strip() in {"1", "True", "true", "yes", "OK"} else 0   
         new_row["Accel Y"] = _parse_float(row.get("Accel Y"))
         new_row["Accel Z"] = _parse_float(row.get("Accel Z"))
         new_row["Gyro X"] = _parse_float(row.get("Gyro X"))
