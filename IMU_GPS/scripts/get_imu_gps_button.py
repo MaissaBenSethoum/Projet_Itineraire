@@ -3,7 +3,7 @@ from config import (
     LSM6DSO_ADDR, ACCEL_RANGE, ACCEL_FREQ,
     GYRO_RANGE, GYRO_FREQ,
     GNSS_DEVICE_ADDR, GNSS_MODES, MODE_GNSS,
-    PORT_BUTTON, PORT_LED
+    PORT_BUTTON, PORT_LED, MAGNETO_RANGE, MAGNETO_FREQ, MAG_ADDR
 )
 from core.imu_gps_acquisition import get_imu_gps_data
 from utils import Button, LED
@@ -42,16 +42,17 @@ if __name__ == "__main__":
 
         get_imu_gps_data(
             XL_addr=LSM6DSO_ADDR,
+            MAG_addr=MAG_ADDR,
             accel_range=ACCEL_RANGE,
             accel_freq=ACCEL_FREQ,
             gyro_range=GYRO_RANGE,
             gyro_freq=GYRO_FREQ,
+            magneto_range=MAGNETO_RANGE,
+            magneto_freq=MAGNETO_FREQ,
             gnss_addr=GNSS_DEVICE_ADDR,
             gnss_mode=GNSS_MODES[MODE_GNSS],
             csv_out=csv_name,
-            stop_condition=stop_condition
-        )
-
+            stop_condition=stop_condition)
         print("Acquisition arrêtée.")
         led.off()
 

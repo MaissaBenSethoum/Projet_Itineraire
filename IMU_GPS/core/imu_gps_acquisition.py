@@ -8,32 +8,20 @@ from utils import CSVHandler
 
 def get_imu_gps_data(
     XL_addr,
+    MAG_addr,
     accel_range,
     accel_freq,
     gyro_range,
     gyro_freq,
+    magneto_range,
+    magneto_freq,
     gnss_addr,
     gnss_mode,
     csv_out=None,
     stop_condition=None):
-    """
-    Fait l'acquisition simultanée des données IMU et GNSS.
 
-    Arguments :
-    - XL_addr : adresse I2C de l'IMU
-    - accel_range : plage de mesure de l'accéléromètre
-    - accel_freq : fréquence de l'accéléromètre
-    - gyro_range : plage de mesure du gyroscope
-    - gyro_freq : fréquence du gyroscope
-    - gnss_addr : adresse I2C du module GNSS
-    - gnss_mode : mode GNSS utilisé
-    - csv_out : chemin du fichier CSV de sortie
-    """
+    interval = 1 / min(accel_freq, gyro_freq, magneto_freq)
 
-    # Intervalle d'acquisition basé sur la fréquence IMU
-    interval = 1 / min(accel_freq, gyro_freq)
-
-    # Création CSV
     save_csv = False
     if csv_out is not None:
         save_csv = True
@@ -47,31 +35,49 @@ def get_imu_gps_data(
 
         record = CSVHandler(csv_out)
         record.create_csv_with_header([
-            "Timestamp", "UTC", "Latitude","Longitude","Altitude", "Nb Satellites", "GPS Valid",
-            "Accel X","Accel Y","Accel Z","Gyro X","Gyro Y","Gyro Z"])
+            "Timestamp", "UTC",
+            "Latitude", "Longitude", "Altitude",
+            "Nb Satellites", "GPS Valid",
+            "Fix Quality", "Fix Type",
+            "HDOP", "VDOP", "PDOP",
+            "SOG_ms", "COG",
+            "Accel X", "Accel Y", "Accel Z",
+            "Gyro X", "Gyro Y", "Gyro Z",
+            "Magneto X", "Magneto Y", "Magneto Z"
+        ])
 
-    # Initialisation IMU
-    initialize_sensors(XL_addr,accel_range,accel_freq,gyro_range,gyro_freq)
+    # Initialisation IMU + magnétomètre
+    initialize_sensors(
+        XL_addr,
+        MAG_addr,
+        accel_range,
+        accel_freq,
+        gyro_range,
+        gyro_freq,
+        magneto_range,
+        magneto_freq
+    )
 
     # Initialisation GNSS
     gnss = GNSS(1, gnss_addr)
     gnss.initialisation(gnss_mode)
 
     print("Acquisition IMU + GNSS démarrée.")
-    print("Ctrl+C pour arrêter.")
+    print("Bouton ou Ctrl+C pour arrêter.")
 
     try:
         while stop_condition is None or not stop_condition():
             start_time = time.time()
             timestamp = time.time()
 
-            # Lecture IMU
-            accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z = read_IMU(
+            accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z, magneto_x, magneto_y, magneto_z = read_IMU(
                 XL_addr,
+                MAG_addr,
                 accel_range,
-                gyro_range)
+                gyro_range,
+                magneto_range
+            )
 
-            # Lecture GNSS
             gnss.update()
 
             if gnss.reception_ok:
@@ -89,7 +95,6 @@ def get_imu_gps_data(
                 altitude = ""
                 nb_satellites = gnss.number_satellites
 
-            # Sauvegarde CSV
             if save_csv:
                 record.append_row([
                     timestamp,
@@ -99,16 +104,24 @@ def get_imu_gps_data(
                     altitude,
                     nb_satellites,
                     gps_valid,
+                    gnss.fix_quality,
+                    gnss.fix_type,
+                    gnss.HDOP,
+                    gnss.VDOP,
+                    gnss.PDOP,
+                    gnss.SOG_ms,
+                    gnss.COG,
                     accel_x,
                     accel_y,
                     accel_z,
                     gyro_x,
                     gyro_y,
-                    gyro_z
+                    gyro_z,
+                    magneto_x,
+                    magneto_y,
+                    magneto_z
                 ])
 
-
-            # Respect de la fréquence IMU
             elapsed_time = time.time() - start_time
             time_to_sleep = max(0, interval - elapsed_time)
             time.sleep(time_to_sleep)
