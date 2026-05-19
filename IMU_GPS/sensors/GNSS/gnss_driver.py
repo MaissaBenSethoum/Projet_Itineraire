@@ -21,10 +21,10 @@ class SatelliteInfo:
     """Informations d'un satellite annoncé par une trame GSV."""
 
     prn: str = ""
-    elevation_deg = None
-    azimuth_deg = None
-    snr_dbhz = None
-    talker = ""
+    elevation_deg: int = None
+    azimuth_deg: int = None
+    snr_dbhz: int = None
+    talker: str = ""
 
 
 from dataclasses import dataclass, field
