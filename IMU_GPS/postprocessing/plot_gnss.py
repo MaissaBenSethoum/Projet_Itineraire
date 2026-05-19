@@ -23,6 +23,9 @@ def plot_GNSS(df1, df2, output):
         (df1, "blue",  "Itinéraire 1"),
         (df2, "red",   "Itinéraire 2"),
     ]
+    # configs = [
+    #     (df1, "blue",  "Itinéraire 1")
+    # ]
 
     for df, color, label in configs:
         points = list(zip(df['Latitude'], df['Longitude']))
