@@ -9,7 +9,7 @@ def appliqueKalman(savepath,output):
     df = transformation_csv_dataframe(savepath)
     dfKalman = run_kalman(df)
     transformation_dataframe_csv(dfKalman,output)
-    
+
 def main_offline(savepath_donnee,savepath_strava,output):
     """
      fonction qui prend un csv d'acquistion brut et le traite les données et génère la carte
@@ -21,6 +21,17 @@ def main_offline(savepath_donnee,savepath_strava,output):
     df_sansbiais_nettoye= preprocess_imu_gps_df(df_sansbiais)
     df_kalman = run_kalman(df_sansbiais_nettoye)
     plot_GNSS(df_kalman,df2, output)
+    
+# def main_offline(savepath_donnee,output):
+#     """
+#      fonction qui prend un csv d'acquistion brut et le traite les données et génère la carte
+#     """
+#     config_imu = (int(ACCEL_RANGE), float(ACCEL_FREQ), int(GYRO_RANGE), float(GYRO_FREQ))
+#     df1 = transformation_csv_dataframe(savepath_donnee)
+#     df_sansbiais = corriger_biais_imu(df1,config_imu)
+#     df_sansbiais_nettoye= preprocess_imu_gps_df(df_sansbiais)
+#     df_kalman = run_kalman(df_sansbiais_nettoye)
+#     plot_GNSS(df_kalman, output)
 
     
 
@@ -49,5 +60,6 @@ if __name__ == "__main__":
     if args.mode == "apk":
         appliqueKalman(args.savepath,args.output)
     if args.mode == "run":
-      main_offline(args.savepath_own, args.savepath_strava, args.output)
+        main_offline(args.savepath_own, args.savepath_strava, args.output)
+        #main_offline(args.savepath_own, args.output)
        
