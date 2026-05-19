@@ -3,11 +3,6 @@ import pandas as pd
 import folium
 import os
 
-import argparse
-import pandas as pd
-import folium
-import os
-
 def plot_GNSS(df1, df2, output):
     """
     Trace les données GNSS de deux DataFrames sur une carte OpenStreetMap.
