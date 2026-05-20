@@ -3,6 +3,8 @@ ACCEL_RANGE = 2
 ACCEL_FREQ = 26
 GYRO_RANGE = 250
 GYRO_FREQ = 26
+MAGNETO_RANGE = 4
+MAGNETO_FREQ = 20
 
 # Paramètres du GNSS
 MODE_GNSS = 'gps_beidou_glonass'

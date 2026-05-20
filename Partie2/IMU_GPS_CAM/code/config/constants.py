@@ -2,8 +2,12 @@
 LSM6DSO_ADDR = 0x6b               
 LIS3MDL_ADDR = 0x1e   
 
+MAG_ADDR = LIS3MDL_ADDR
+
 PORT_BUTTON = 21 # Port GPIO du Bouton
 PORT_LED = 13 # Port GPIO de la LED
+
+DISPLAY_SIZE = (640,480)
 
 # Constantes des registres de configuration de l'IMU (LSM6DSO)
 CTRL1_XL = 0x10                   # Configuration de l'accéléromètre 
@@ -79,4 +83,40 @@ GNSS_MODES = {
     'gps_glonass': GPS_GLONASS,
     'beidou_glonass': BEIDOU_GLONASS,
     'gps_beidou_glonass': GPS_BEIDOU_GLONASS
+}
+
+CTRL_REG1 = 0x20  # Registre de configuration du magnetometre (frequence)
+CTRL_REG2 = 0x21  # Registre de configuration du magnetometre (plage)
+OUT_X_L = 0x28  # Registre de lecture du magnetometre
+
+# Mappages des frequences (Hz) pour le magnetometre
+CONFIG_MAG_FREQ = {
+    0.625: 0b000000,
+    1.25: 0b000010,
+    2.5: 0b000100,
+    5: 0b000110,
+    10: 0b001000,
+    20: 0b001010,
+    40: 0b001100,
+    80: 0b001110,
+    155: 0b110001,
+    300: 0b100001,
+    560: 0b010001,
+    1000: 0b000001,
+}
+
+# Mappages des plages (full-scale range) pour le magnetometre
+CONFIG_MAG_RANGE = {
+    4: 0,  # +/-4 gauss
+    8: 1,  # +/-8 gauss
+    12: 2,  # +/-12 gauss
+    16: 3,  # +/-16 gauss
+}
+
+# Sensibilites du magnetometre pour convertir les donnees brutes
+CONFIG_MAG_SENSITIVITY = {
+    4: 6842,  # LSB/gauss
+    8: 3421,  # LSB/gauss
+    12: 2281,  # LSB/gauss
+    16: 1711,  # LSB/gauss
 }

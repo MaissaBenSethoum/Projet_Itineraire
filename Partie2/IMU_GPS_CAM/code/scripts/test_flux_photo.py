@@ -4,9 +4,9 @@ from pathlib import Path
 import cv2
 import mediapipe as mp
 
-from sensors.CAMERA import Camera
+from sensors.CAMERA.camera import Camera
 from utils import Button, LED
-from config import PORT_BUTTON, PORT_LED, DISPLAY_SIZE
+from config.constants import PORT_BUTTON, PORT_LED, DISPLAY_SIZE
 from core.display import show_frame
 
 # Dossier de sauvegarde
@@ -69,7 +69,7 @@ def main(show_stream=True, size=None):
                         gesture_detected = True
 
             # 3. Affichage du flux vidéo en continu
-            if show_stream:
+            if show_frame:
                 infos = [
                     f"Photo index: {index}",
                     "Geste attendu: Victory (V)",
@@ -117,6 +117,7 @@ def main(show_stream=True, size=None):
                 # Configuration du cooldown à 5 secondes pour la prochaine détection
                 cooldown_time = time.time() + 5.0
                 index += 1
+                time.sleep(5)
 
             time.sleep(0.01)
 

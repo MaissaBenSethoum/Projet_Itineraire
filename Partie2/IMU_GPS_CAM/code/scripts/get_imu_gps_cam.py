@@ -12,12 +12,12 @@ from config import (
     PORT_BUTTON, PORT_LED, DISPLAY_SIZE,
     LSM6DSO_ADDR, ACCEL_RANGE, ACCEL_FREQ,
     GYRO_RANGE, GYRO_FREQ, GNSS_DEVICE_ADDR,
-    GNSS_MODES, MODE_GNSS
+    GNSS_MODES, MODE_GNSS, MAGNETO_RANGE, MAGNETO_FREQ, MAG_ADDR
 )
 from core.display import show_frame
 
 # Imports de la partie IMU / GNSS
-from core.imu_gps_acquisition import get_imu_gps_data
+from core.imu_gps_acquisition import get_imu_gps_data, get_imu_gps_long_lat
 
 # Dossier de sauvegarde des images
 SAVE_DIR = Path("images")
@@ -98,12 +98,15 @@ def main(show_stream=True, size=None):
         target=get_imu_gps_data,
         kwargs={
             "XL_addr": LSM6DSO_ADDR,
+            "MAG_addr" : MAG_ADDR,
             "accel_range": ACCEL_RANGE,
             "accel_freq": ACCEL_FREQ,
             "gyro_range": GYRO_RANGE,
             "gyro_freq": GYRO_FREQ,
             "gnss_addr": GNSS_DEVICE_ADDR,
             "gnss_mode": GNSS_MODES[MODE_GNSS],
+            "magneto_range" : MAGNETO_RANGE,
+            "magneto_freq" : MAGNETO_FREQ,
             "csv_out": csv_name,
             "stop_condition": stop_condition
         },
@@ -161,9 +164,25 @@ def main(show_stream=True, size=None):
                 led.off() 
                 time.sleep(0.1)
                 led.on()
-
+    
+                latitude = 0
+                longitude = 0
+                
+                latitude, longitude = get_imu_gps_long_lat(
+                    XL_addr=LSM6DSO_ADDR,
+                    MAG_addr=MAG_ADDR,
+                    accel_range=ACCEL_RANGE,
+                    accel_freq=ACCEL_FREQ,
+                    gyro_range=GYRO_RANGE,
+                    gyro_freq=GYRO_FREQ,
+                    magneto_range=MAGNETO_RANGE,
+                    magneto_freq=MAGNETO_FREQ,
+                    gnss_addr=GNSS_DEVICE_ADDR,
+                    gnss_mode=GNSS_MODES[MODE_GNSS]
+                    )
+                
                 # Sauvegarde de l'image propre
-                filename = SAVE_DIR / f"image_{index:06d}.jpg"
+                filename = SAVE_DIR / f"image_{latitude}_{longitude}.jpg"
                 camera.save_frame(frame, str(filename))
                 
                 # --- EFFET APPAREIL PHOTO (FIGER L'IMAGE) ---
