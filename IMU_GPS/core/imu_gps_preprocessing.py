@@ -63,25 +63,49 @@ def clean_rows(rows):
         cleaned.append(row)
 
     return cleaned
+
 def convert_units(rows):
-    """Convertit les champs de texte en nombres et unités exploitables."""
+    """Convertit les champs texte en valeurs numériques exploitables."""
     converted = []
 
     for row in rows:
         new_row = dict(row)
-        new_row["Timestamp"] = _parse_float(row.get("Timestamp"), default=0.0)
-        new_row["Latitude"] = _parse_float(row.get("Latitude"))
-        new_row["Longitude"] = _parse_float(row.get("Longitude"))
-        new_row["Altitude"] = _parse_float(row.get("Altitude"))
-        new_row["Nb Satellites"] = _parse_float(row.get("Nb Satellites"), default=0)
-        new_row["Accel X"] = _parse_float(row.get("Accel X"))
-        gps_valid_raw = row.get("GPS Valid", "0")                                                                                                                                              
-        new_row["GPS Valid"] = 1 if str(gps_valid_raw).strip() in {"1", "True", "true", "yes", "OK"} else 0   
-        new_row["Accel Y"] = _parse_float(row.get("Accel Y"))
-        new_row["Accel Z"] = _parse_float(row.get("Accel Z"))
-        new_row["Gyro X"] = _parse_float(row.get("Gyro X"))
-        new_row["Gyro Y"] = _parse_float(row.get("Gyro Y"))
-        new_row["Gyro Z"] = _parse_float(row.get("Gyro Z"))
+        colonnes_numeriques = [
+            "Timestamp",
+            "Latitude",
+            "Longitude",
+            "Altitude",
+            "Nb Satellites",
+            "Fix Quality",
+            "Fix Type",
+            "HDOP",
+            "VDOP",
+            "PDOP",
+            "SOG_ms",
+            "COG",
+            "Accel X",
+            "Accel Y",
+            "Accel Z",
+            "Gyro X",
+            "Gyro Y",
+            "Gyro Z",
+            "Magneto X",
+            "Magneto Y",
+            "Magneto Z"]
+
+        for col in colonnes_numeriques:
+            if col == "Timestamp":
+                new_row[col] = _parse_float(row.get(col),default=0.0)
+
+            elif col == "Nb Satellites":new_row[col] = _parse_float(row.get(col),default=0)
+
+            else:
+                new_row[col] = _parse_float(row.get(col))
+
+        gps_valid_raw = row.get("GPS Valid", "0")
+
+        new_row["GPS Valid"] = (1 if str(gps_valid_raw).strip() in {"1", "True", "true", "yes", "OK"}else 0)
+
         converted.append(new_row)
 
     return converted
