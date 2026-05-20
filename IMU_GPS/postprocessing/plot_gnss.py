@@ -3,20 +3,22 @@ import pandas as pd
 import folium
 import os
 
-def plot_GNSS(df1, df2, output):
+def plot_GNSS(df1, df2, df3, output):
     """
     Trace les données GNSS de deux DataFrames sur une carte OpenStreetMap.
     Arguments:
     - df1    : Premier DataFrame contenant les colonnes 'Latitude' et 'Longitude'
     - df2    : Deuxième DataFrame contenant les colonnes 'Latitude' et 'Longitude'
+    - df3    : Troisième DataFrame contenant les colonnes 'Latitude' et 'Longitude'
     - output : Chemin du fichier HTML de sortie
     """
     # Centrer la carte sur le premier point du premier trajet
     m = folium.Map(location=[df1['Latitude'].iloc[0], df1['Longitude'].iloc[0]], zoom_start=12)
 
     configs = [
-        (df1, "blue",  "Itinéraire 1"),
-        (df2, "red",   "Itinéraire 2"),
+        (df1, "blue",  "kalman"),
+        (df2, "red",   "strava"),
+        (df3, "green", "gps_brut")
     ]
     # configs = [
     #     (df1, "blue",  "Itinéraire 1")

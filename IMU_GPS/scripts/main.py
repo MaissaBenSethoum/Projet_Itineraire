@@ -1,4 +1,4 @@
-from utils.FiltreKalman import run_kalman,run_kalman_mag
+from utils.FiltreKalman import run_kalman
 from postprocessing.plot_gnss import plot_GNSS
 from core.imu_gps_preprocessing import preprocess_imu_gps_df
 from config.parameters import ACCEL_RANGE, ACCEL_FREQ, GYRO_FREQ, GYRO_RANGE
@@ -19,8 +19,9 @@ def main_offline(savepath_donnee,savepath_strava,output):
     df2 = transformation_csv_dataframe(savepath_strava)
     df_sansbiais = corriger_biais_imu(df1,config_imu)
     df_sansbiais_nettoye= preprocess_imu_gps_df(df_sansbiais)
-    df_kalman = run_kalman_mag(df_sansbiais_nettoye)
-    plot_GNSS(df_kalman,df2, output)
+    df3 = df_sansbiais_nettoye[df_sansbiais_nettoye['GPS Valid'] == 1]
+    df_kalman = run_kalman(df_sansbiais_nettoye)
+    plot_GNSS(df_kalman,df2, df3, output)
     
 # def main_offline(savepath_donnee,output):
 #     """
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "savepath_own",
+        "savepath_kalman",
         type=str,
     )
     parser.add_argument(
@@ -58,8 +59,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     if args.mode == "apk":
-        appliqueKalman(args.savepath_own,args.output)
+        appliqueKalman(args.savepath_kalman,args.output)
     if args.mode == "run":
-        main_offline(args.savepath_own, args.savepath_strava, args.output)
+        main_offline(args.savepath_kalman, args.savepath_strava, args.output)
         #main_offline(args.savepath_own, args.output)
        

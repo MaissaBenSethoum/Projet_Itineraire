@@ -11,7 +11,6 @@ class EKF:
 
         # self.P = np.eye(4) * 0.1
         self.UERE = 2.5 # incertitude intiale en m 
-        self.sigma_mag = np.radians(5.0)  # ça doit être l'ecart type pour la précision 
         self.P = np.diag([10, 10, 5, 1])
 
         self.Q = np.diag([0.01, 0.01, 0.5, 0.01])
@@ -22,7 +21,6 @@ class EKF:
             [0, 1, 0, 0]
         ])
 
-        self.H_mag = np.array([[0, 0, 0, 1]]) # self H_magnetometre
 
     def F_jacobienne(self, dt):
 
@@ -72,7 +70,6 @@ class EKF:
         I = np.eye(4)
         self.P = (I - K @ H) @ self.P
     
-
 def lat_lon_to_meters(lat, lon, ref_lat, ref_lon):
       y = (lat - ref_lat) * 111139
       x = (lon - ref_lon) * 111139 * np.cos(np.radians(ref_lat))
@@ -110,6 +107,7 @@ def appliquee_efk(df):
         results.append(ekf.x.flatten().copy())
 
     return results, ref_lat, ref_lon
+
 def run_kalman(df):
     raw_results, ref_lat, ref_lon = appliquee_efk(df)
 
