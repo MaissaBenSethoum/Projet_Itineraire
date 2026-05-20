@@ -1,6 +1,27 @@
 import csv
 from pathlib import Path
 import pandas as pd
+from config.parameters import MAG_BIAS
+
+def corriger_magnetometre(rows):
+    """Corrige le décalage hard iron du magnétomètre."""
+    corrected = []
+
+    for row in rows:
+        new_row = dict(row)
+
+        if new_row.get("Magneto X") is not None:
+            new_row["Magneto X"] = new_row["Magneto X"] - MAG_BIAS[0]
+
+        if new_row.get("Magneto Y") is not None:
+            new_row["Magneto Y"] = new_row["Magneto Y"] - MAG_BIAS[1]
+
+        if new_row.get("Magneto Z") is not None:
+            new_row["Magneto Z"] = new_row["Magneto Z"] - MAG_BIAS[2]
+
+        corrected.append(new_row)
+
+    return corrected
 
 
 def read_imu_gps_csv(csv_path):
@@ -112,11 +133,12 @@ def convert_units(rows):
 
 
 def preprocess_imu_gps_csv(input_csv, output_csv):
-    """Lit un CSV brut, réalise le prétraitement et écrit un CSV de sortie."""
     rows = read_imu_gps_csv(input_csv)
 
     rows = clean_rows(rows)
     rows = convert_units(rows)
+    rows = corriger_magnetometre(rows)
+
     write_imu_gps_csv(rows, output_csv)
     return output_csv
 
@@ -124,4 +146,5 @@ def preprocess_imu_gps_df(input_df):
     rows = input_df.to_dict(orient='records')
     rows = clean_rows(rows)
     rows = convert_units(rows)
+    rows = corriger_magnetometre(rows)
     return pd.DataFrame(rows)
