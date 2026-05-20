@@ -19,8 +19,9 @@ def main_offline(savepath_donnee,savepath_strava,output):
     df2 = transformation_csv_dataframe(savepath_strava)
     df_sansbiais = corriger_biais_imu(df1,config_imu)
     df_sansbiais_nettoye= preprocess_imu_gps_df(df_sansbiais)
-    df_kalman = run_kalman_mag(df_sansbiais_nettoye)
-    plot_GNSS(df_kalman,df2, output)
+    df3 = df_sansbiais_nettoye[df_sansbiais_nettoye['GPS Valid'] == 1]
+    df_kalman = run_kalman(df_sansbiais_nettoye)
+    plot_GNSS(df_kalman,df2,df3, output)
     
 # def main_offline(savepath_donnee,output):
 #     """
