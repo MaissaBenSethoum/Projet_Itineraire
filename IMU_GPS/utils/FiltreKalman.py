@@ -10,6 +10,8 @@ class EKF:
         self.dt = dt_initial
 
         # self.P = np.eye(4) * 0.1
+        self.UERE = 2.5 # incertitude intiale en m 
+        self.sigma_mag = np.radians(5.0)  # ça doit être l'ecart type pour la précision 
         self.P = np.diag([10, 10, 5, 1])
 
         self.Q = np.diag([0.01, 0.01, 0.5, 0.01])
@@ -19,6 +21,8 @@ class EKF:
             [1, 0, 0, 0],
             [0, 1, 0, 0]
         ])
+
+        self.H_mag = np.array([[0, 0, 0, 1]]) # self H_magnetometre
 
     def F_jacobienne(self, dt):
 
@@ -52,8 +56,9 @@ class EKF:
 
         self.P = F @ self.P @ F.T + self.Q
 
-    def miseAJour(self, z):
-
+    def miseAJour(self, z,hdop= 1.0):
+        sigma_gps = self.UERE * hdop/1.18
+        self.R = np.diag([sigma_gps**2 , sigma_gps**2])
         H = self.H
         z = z.reshape(2, 1)
 
@@ -66,6 +71,7 @@ class EKF:
 
         I = np.eye(4)
         self.P = (I - K @ H) @ self.P
+    
 
 def lat_lon_to_meters(lat, lon, ref_lat, ref_lon):
       y = (lat - ref_lat) * 111139
@@ -94,13 +100,16 @@ def appliquee_efk(df):
 
         if pd.notnull(df['Latitude'].iloc[i]) and df['GPS Valid'].iloc[i] == 1:
             mx, my = lat_lon_to_meters(df['Latitude'].iloc[i], df['Longitude'].iloc[i], ref_lat, ref_lon)
-            ekf.miseAJour(np.array([mx, my]))
+            if 'HDOP' in df.columns and pd.notnull(df['HDOP'].iloc[i]):
+                hdop = float(df['HDOP'].iloc[i])
+                hdop = max(0.5, min(hdop, 50.0))   # clamp [0.5 ; 50]
+            else:
+                hdop = 1.0
+            ekf.miseAJour(np.array([mx, my]), hdop=hdop)
 
         results.append(ekf.x.flatten().copy())
 
     return results, ref_lat, ref_lon
-
-
 def run_kalman(df):
     raw_results, ref_lat, ref_lon = appliquee_efk(df)
 
@@ -118,6 +127,8 @@ def run_kalman(df):
         'Vitesse':   df_kalman['V_ms'].values,
         'Cap':       df_kalman['Theta_rad'].values
     })
+
+
     
     
 

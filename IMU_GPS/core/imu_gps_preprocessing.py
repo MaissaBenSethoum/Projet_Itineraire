@@ -93,8 +93,6 @@ def preprocess_imu_gps_csv(input_csv, output_csv):
 
     rows = clean_rows(rows)
     rows = convert_units(rows)
-    rows = filter_imu_noise(rows)
-
     write_imu_gps_csv(rows, output_csv)
     return output_csv
 
