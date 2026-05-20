@@ -10,7 +10,7 @@ if __name__ == "__main__":
     args = arg.parse_args()
     df = pd.read_csv(args.file_path)
 
-    colonnes_imu = ["Accel X","Accel Y","Accel Z","Gyro X","Gyro Y","Gyro Z"]
+    colonnes_imu = ["Accel X","Accel Y","Accel Z","Gyro X","Gyro Y","Gyro Z","Magneto X", "Magneto Y", "Magneto Z"]
 
     print("Moyennes IMU :")
 
