@@ -6,7 +6,7 @@ from config import (
     PORT_BUTTON, PORT_LED, MAGNETO_RANGE, MAGNETO_FREQ, MAG_ADDR
 )
 from core.imu_gps_acquisition import get_imu_gps_data
-
+from utils.CSVHandler import CSVHandler
 
 if __name__ == "__main__":
 
