@@ -3,7 +3,7 @@ import os
 
 from sensors.IMU import initialize_sensors, read_IMU
 from sensors.GNSS import GNSS
-from utils import CSVHandler
+from utils.CSVHandler import CSVHandler
 
 
 def get_imu_gps_data(

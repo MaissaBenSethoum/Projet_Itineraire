@@ -6,7 +6,8 @@ from config import (
     PORT_BUTTON, PORT_LED, MAGNETO_RANGE, MAGNETO_FREQ, MAG_ADDR
 )
 from core.imu_gps_acquisition import get_imu_gps_data
-from utils import Button, LED
+from utils.Button import Button
+from utils.LED import LED
 
 
 if __name__ == "__main__":
@@ -37,7 +38,7 @@ if __name__ == "__main__":
         button.on_press(demander_arret)
 
         csv_name = (
-            f"../data/acq_{ACCEL_RANGE}_{ACCEL_FREQ}_{GYRO_RANGE}_{GYRO_FREQ}.csv"
+            f"../data/acq_v{ACCEL_RANGE}_{ACCEL_FREQ}_{GYRO_RANGE}_{GYRO_FREQ}.csv"
         )
 
         get_imu_gps_data(
