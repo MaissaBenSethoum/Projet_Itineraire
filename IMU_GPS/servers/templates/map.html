@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trajectoire en direct</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+ <style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: monospace; background: #1a1a2e; color: white; }
+#map { height: 80vh; }
+
+.stat { font-size: 13px; white-space: nowrap; }
+#progress-container {
+  flex: 1;
+  background: #0f3460;
+  border-radius: 4px;
+  height: 8px;
+}
+#progress-bar {
+  height: 100%;
+  width: 0%;
+  background: #e94560;
+  border-radius: 4px;
+  transition: width 0.8s ease;
+}
+
+/* ── Barre de contrôle ── */
+#controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+  background: #16213e;
+  border-top: 1px solid #0f3460;
+}
+.btn {
+  padding: 8px 22px;
+  border-radius: 6px;
+  border: none;
+  font-family: monospace;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+#btn-start { background: #2ecc71; color: #0f2d1f; }
+#btn-stop  { background: #e94560; color: #ffffff; }
+#status-label { font-size: 13px; color: #aaa; }
+#timer-label  { font-size: 13px; color: #2ecc71; font-weight: bold; }
+
+/* ── Carte de résumé final ── */
+#summary {
+  display: none;
+  gap: 16px;
+  padding: 14px 20px;
+  background: #16213e;
+  border-top: 1px solid #0f3460;
+  flex-wrap: wrap;
+}
+#summary.visible { display: flex; }
+.s-card {
+  background: #0f3460;
+  border-radius: 8px;
+  padding: 10px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+.s-card-label { font-size: 11px; color: #7a9cc4; }
+.s-card-value { font-size: 22px; font-weight: bold; color: #e94560; }
+.live { color: #2ecc71; font-weight: bold; }
+</style>
+</head>
+<body>
+  <!-- Le header pour dire s'il y a une erreur serveur ou pas -->
+  <div id="header">
+    <h1>Trajectoire IMU / GPS</h1>
+    <span id="status">En attente…</span>
+  </div>
+  <div id="map"></div>
+  <div id="info">Points : 0 &nbsp;|&nbsp; Position : —</div>
+  <!-- Boutons qui permet de lancer ou arreter l'acquisition -->
+  <div id="controls">
+     <button class="btn" id="btn-start" onclick="lancer_acquisition()">▶ Start</button>
+     <button class="btn" id="btn-stop"  disabled onclick="arreter_acquisition()">⏹ Stop</button>
+     <span id="status-label">Prêt</span>
+     <span id="timer-label"></span>
+  </div>
+  <!-- Affichage du summary (distance parcourue vitesse temps de parcourt) -->
+  <div id="summary">
+  <div class="s-card">
+    <span class="s-card-label">Distance totale</span>
+    <span class="s-card-value" id="res-distance">—</span>
+  </div>
+  <div class="s-card">
+    <span class="s-card-label">Durée</span>
+    <span class="s-card-value" id="res-duration">—</span>
+  </div>
+  <div class="s-card">
+    <span class="s-card-label">Vitesse moyenne</span>
+    <span class="s-card-value" id="res-speed-avg">—</span>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const map = L.map("map").setView([49.3867, 1.0723], 17);
+  let startTime = null;
+  let intervalData = null;
+  let intervalTimer = null;
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OpenStreetMap",
+    maxZoom: 19,
+  }).addTo(map);
+
+  const polyline = L.polyline([], { color: "red", weight: 4 }).addTo(map);
+  let marker = null;
+
+  const photoLayer = L.layerGroup().addTo(map);
+  let photosLoaded = new Set();  // pour ne pas dupliquer
+
+  const statusEl = document.getElementById("status");
+  const infoEl   = document.getElementById("info");
+
+  const cameraIcon = L.divIcon({
+    html: '<div style="font-size:22px;">📷</div>',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    className: ''
+  });
+
+  async function fetchPhotos() {
+    try {
+      const res = await fetch("/photos");
+      const photos = await res.json();
+
+      photos.forEach((p, idx) => {
+        const id = p.image;
+        if (photosLoaded.has(id)) return;   
+        photosLoaded.add(id);
+
+        const popupHtml = `
+          <div style="text-align:center;">
+            <img src="/photo/${p.image}" style="max-width:250px; border-radius:4px;" />
+            <div style="margin-top:6px; font-size:0.75rem; color:#555;">
+              ${p.timestamp || ''}
+            </div>
+          </div>
+        `;
+
+        L.marker([p.lat, p.lon], { icon: cameraIcon })
+         .bindPopup(popupHtml, { maxWidth: 280 })
+         .addTo(photoLayer);
+      });
+    } catch (e) {
+      console.error("Erreur fetchPhotos:", e);
+    }
+  }
+
+  async function fetchData() {
+    try {
+      const res  = await fetch("/data");
+      const json = await res.json();
+      const points  = json.points  || [];
+      const current = json.current;
+
+      if (points.length > 1) {
+        polyline.setLatLngs(points);
+      }
+
+      if (current) {
+        if (!marker) {
+          marker = L.marker(current).addTo(map);
+          map.setView(current, 17);
+        } else {
+          marker.setLatLng(current);
+        }
+        statusEl.textContent = "En direct";
+        statusEl.className   = "live";
+        infoEl.textContent   =
+          "Points : " + points.length +
+          " | Lat : " + current[0].toFixed(6) +
+          " Lon : " + current[1].toFixed(6);
+      }
+      fetchPhotos();
+    } catch (e) {
+      statusEl.textContent = "Erreur serveur";
+      statusEl.className   = "";
+      console.error(e);
+    }
+  }
+  function lancer_acquisition() {
+    document.getElementById("btn-start").disabled = true;
+    document.getElementById("btn-stop").disabled = false;
+    document.getElementById("status-label").textContent = "Acquisition en cours...";
+    document.getElementById("summary").classList.remove("visible");
+    startTime = Date.now();
+    document.getElementById("timer-label").textContent = "00:00:00";
+    intervalTimer = setInterval(() => {
+      const s = Math.round((Date.now() - startTime) / 1000);
+      document.getElementById("timer-label").textContent = formatDuration(s);
+    }, 1000);
+    fetchData();
+    intervalData = setInterval(fetchData, 1000);
+  }
+
+  function arreter_acquisition() {
+    clearInterval(intervalData);
+    clearInterval(intervalTimer);
+    intervalData = null;
+    intervalTimer = null;
+    finAcquisition();
+  }
+
+ function haversine([lat1, lon1], [lat2, lon2]) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2+ Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatDuration(seconds) {
+  const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+  const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+  const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
+
+function setSummary(distance, duration, speedAvg) {
+  document.getElementById("res-distance").textContent = distance.toFixed(2) + " km";
+  document.getElementById("res-duration").textContent = formatDuration(duration);
+  document.getElementById("res-speed-avg").textContent = speedAvg.toFixed(2) + " km/h";
+  document.getElementById("summary").classList.add("visible");
+}
+
+function finAcquisition() {
+  document.getElementById("btn-start").disabled = false;
+  document.getElementById("btn-stop").disabled = true;
+  document.getElementById("status-label").textContent = "Acquisition terminée";
+  const elapsed = Math.round((Date.now() - startTime) / 1000);
+  const latlngs = polyline.getLatLngs();
+  const distance = latlngs.length >= 2
+    ? haversine([latlngs[0].lat, latlngs[0].lng], [latlngs[latlngs.length - 1].lat, latlngs[latlngs.length - 1].lng])
+    : 0;
+  const speedAvg = elapsed > 0 ? distance / (elapsed / 3600) : 0;
+  setSummary(distance, elapsed, speedAvg);
+}
+</script>
+</body>
+</html>
