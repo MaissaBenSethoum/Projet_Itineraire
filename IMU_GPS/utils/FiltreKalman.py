@@ -26,7 +26,7 @@ class EKF:
         self.last_gps_lon = None
 
         self.UERE = 2.5  # User Equivalent Range Error (m)
-
+        
     def F_jacobienne(self, dt):
 
         x, y, v , theta = self.x.flatten()
