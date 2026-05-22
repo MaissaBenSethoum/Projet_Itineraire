@@ -1,7 +1,7 @@
 import sys
 import os
-import threading
 import re
+import threading
 import pandas as pd
 from flask import Flask, jsonify, render_template, send_from_directory
 
@@ -117,7 +117,8 @@ def serve_photo(filename):
     return send_from_directory(IMAGES_DIR, filename)
 
 if __name__ == "__main__":
-    acquisition = threading.Thread(
+    stop_event = threading.Event()
+    acq_thread = threading.Thread(
         target=get_imu_gps_cam_sans_flux,
         kwargs={
             "XL_addr":        LSM6DSO_ADDR,
@@ -127,15 +128,14 @@ if __name__ == "__main__":
             "gyro_freq":      GYRO_FREQ,
             "gnss_addr":      GNSS_DEVICE_ADDR,
             "gnss_mode":      GNSS_MODES[MODE_GNSS],
-            "csv_out":        CSV_PATH,
             "MAG_addr":       MAG_ADDR,
             "magneto_range":  MAGNETO_RANGE,
             "magneto_freq":   MAGNETO_FREQ,
-            "stop_condition": None,
+            "stop_event":     stop_event,
         },
-        daemon=True
+        daemon=True,
     )
-    acquisition.start()
+    acq_thread.start()
     print(f"Acquisition démarrée → {CSV_PATH}")
     print("Serveur : http://0.0.0.0:5000")
 
