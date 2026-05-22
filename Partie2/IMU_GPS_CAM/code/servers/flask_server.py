@@ -8,6 +8,7 @@ from flask import Flask, jsonify, render_template, send_from_directory
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
+from scripts.get_sans_flux import get_imu_gps_cam_sans_flux
 from core.imu_gps_acquisition import get_imu_gps_data
 from core.imu_gps_preprocessing import preprocess_imu_gps_df
 from config.constants import LSM6DSO_ADDR, GNSS_DEVICE_ADDR, GNSS_MODES,MAG_ADDR
@@ -15,8 +16,8 @@ from config.parameters import (
     ACCEL_RANGE, ACCEL_FREQ, GYRO_RANGE, GYRO_FREQ,
     MODE_GNSS, MAGNETO_RANGE, MAGNETO_FREQ
 )
-from IMU_GPS.utils.FiltreKalman import EKF, run_kalman,run_kalman_incremental
-from IMU_GPS.utils.correction_erreur_systematique import corriger_biais_imu
+from utils.FiltreKalman import EKF, run_kalman,run_kalman_incremental
+from utils.correction_erreur_systematique import corriger_biais_imu
 
 CSV_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'live.csv')
 IMAGES_DIR = os.path.join(os.path.dirname(__file__), '..', 'images') 
@@ -117,7 +118,7 @@ def serve_photo(filename):
 
 if __name__ == "__main__":
     acquisition = threading.Thread(
-        target=get_imu_gps_data,
+        target=get_imu_gps_cam_sans_flux,
         kwargs={
             "XL_addr":        LSM6DSO_ADDR,
             "accel_range":    ACCEL_RANGE,
