@@ -7,8 +7,11 @@ import argparse
 def appliqueKalman(savepath,output):
     """fonction qui permet d'appliquer Kalman à un fichier déjà traité"""
     df = transformation_csv_dataframe(savepath)
-    dfKalman = run_kalman(df)
+    df_sansbiais = corriger_biais_imu(df, (int(ACCEL_RANGE), float(ACCEL_FREQ), int(GYRO_RANGE), float(GYRO_FREQ)))
+    df_nettoye = preprocess_imu_gps_df(df_sansbiais)
+    dfKalman = run_kalman(df_nettoye)
     transformation_dataframe_csv(dfKalman,output)
+
 
 def main_offline(savepath_donnee,savepath_strava,output):
     """
@@ -48,7 +51,7 @@ if __name__ == "__main__":
         type=str,
     )
     parser.add_argument(
-        "savepath_strava",
+        "--savepath_strava",
         type=str,
     )
 

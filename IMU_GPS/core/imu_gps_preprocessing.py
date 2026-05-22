@@ -134,11 +134,9 @@ def convert_units(rows):
 
 def preprocess_imu_gps_csv(input_csv, output_csv):
     rows = read_imu_gps_csv(input_csv)
-
     rows = clean_rows(rows)
     rows = convert_units(rows)
     rows = corriger_magnetometre(rows)
-
     write_imu_gps_csv(rows, output_csv)
     return output_csv
 

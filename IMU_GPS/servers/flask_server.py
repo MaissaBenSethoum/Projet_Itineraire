@@ -1,7 +1,7 @@
 import sys
 import os
 import threading
-import json
+import re
 import pandas as pd
 from flask import Flask, jsonify, render_template, send_from_directory
 
@@ -19,8 +19,8 @@ from IMU_GPS.utils.FiltreKalman import EKF, run_kalman,run_kalman_incremental
 from IMU_GPS.utils.correction_erreur_systematique import corriger_biais_imu
 
 CSV_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'live.csv')
-PHOTOS_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'photos') 
-PHOTOS_JSON = os.path.join(os.path.dirname(__file__), '..', 'data', 'photos.json') 
+IMAGES_DIR = os.path.join(os.path.dirname(__file__), '..', 'images') 
+
  
 CONFIG = (int(ACCEL_RANGE), float(ACCEL_FREQ), int(GYRO_RANGE), float(GYRO_FREQ))
 
@@ -31,7 +31,6 @@ last_index = 0
 ekf_instance = EKF()
 ref_lat = None
 ref_lon = None
-last_ekf_row = None
 
 @app.route("/")
 def index():
@@ -51,7 +50,7 @@ def data():
         return jsonify({"points": all_points, "current": current})
 
     try:
-        df = pd.read_csv(CSV_PATH)
+        df = pd.read_csv(CSV_PATH, on_bad_lines='skip')
     except Exception:
         return jsonify({"points": all_points, "current": current})
 
@@ -73,8 +72,7 @@ def data():
             return jsonify({"points": all_points, "current": current})
         ref_lat = first_valid['Latitude'].iloc[0]
         ref_lon = first_valid['Longitude'].iloc[0]
-        ekf_instance.x[0] = 0.0
-        ekf_instance.x[1] = 0.0
+        ekf_instance = EKF()  # repart de zéro avec P, v, theta propres
 
     try:
         df_filtered = run_kalman_incremental(df_new, ekf_instance, ref_lat, ref_lon)
@@ -92,20 +90,30 @@ def data():
 
 @app.route("/photos")
 def photos():
-    """Retourne la liste des photos avec leurs coordonnées."""
-    if not os.path.exists(PHOTOS_JSON):
+    """Retourne la liste des photos avec leurs coordonnées extraites du nom de fichier."""
+    photos = []
+    if not os.path.exists(IMAGES_DIR):
         return jsonify([])
-    try:
-        with open(PHOTOS_JSON, 'r') as f:
-            return jsonify(json.load(f))
-    except Exception as e:
-        print(f"Erreur lecture photos.json : {e}")
-        return jsonify([])
+    
+    for filename in os.listdir(IMAGES_DIR):
+        if not filename.endswith(".png"):
+            continue
+        match = re.match(r"^(-?\d+\.?\d*)_(-?\d+\.?\d*)\.png$", filename)
+        if match:
+            lat, lon = float(match.group(1)), float(match.group(2))
+            photos.append({
+                "filename": filename,
+                "lat": lat,
+                "lon": lon
+            })
+    
+    return jsonify(photos)
+
 
 @app.route("/photo/<filename>")
 def serve_photo(filename):
     """Sert une image individuelle."""
-    return send_from_directory(PHOTOS_DIR, filename)
+    return send_from_directory(IMAGES_DIR, filename)
 
 if __name__ == "__main__":
     acquisition = threading.Thread(
