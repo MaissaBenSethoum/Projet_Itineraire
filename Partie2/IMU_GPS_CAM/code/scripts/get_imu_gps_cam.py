@@ -7,9 +7,9 @@ import mediapipe as mp
 
 # Imports de la partie Caméra
 from sensors.CAMERA import Camera
-from utils import Button, LED
+from utils import LED
 from config import (
-    PORT_BUTTON, PORT_LED, DISPLAY_SIZE,
+    PORT_LED, DISPLAY_SIZE,
     LSM6DSO_ADDR, ACCEL_RANGE, ACCEL_FREQ,
     GYRO_RANGE, GYRO_FREQ, GNSS_DEVICE_ADDR,
     GNSS_MODES, MODE_GNSS, MAGNETO_RANGE, MAGNETO_FREQ, MAG_ADDR
@@ -47,17 +47,10 @@ def is_victory_gesture(hand_landmarks):
 
 def main(show_stream=True, size=None):
     # Initialisation des périphériques d'interface
-    button = Button(PORT_BUTTON)
     led = LED(PORT_LED)
     
-    # -------------------------------------------------------------
-    # ÉTAPE 1 : Attente du premier appui sur le bouton pour démarrer
-    # -------------------------------------------------------------
-    print("Programme prêt. Appuyez sur le bouton pour démarrer le système...")
-    led.off()
-    button.wait_for_press()
-    button.wait_for_release()
-    time.sleep(0.5)
+    print("\n--- SYSTEME DEMAREE---")
+    led.on()
     
     print("\n--- SYSTÈME DÉMARRÉ ---")
     led.on()
@@ -79,15 +72,6 @@ def main(show_stream=True, size=None):
 
     def stop_condition():
         return acquisition_stoppee[0] or not running
-
-    def demander_arret():
-        nonlocal running
-        print("\n[Bouton] Demande d'arrêt détectée...")
-        acquisition_stoppee[0] = True
-        running = False
-
-    # On configure l'action du bouton : s'il est ré-appuyé, il déclenche l'arrêt
-    button.on_press(demander_arret)
 
     # -------------------------------------------------------------
     # ÉTAPE 2 : Lancement de l'acquisition IMU + GPS en arrière-plan
@@ -141,8 +125,7 @@ def main(show_stream=True, size=None):
             if show_stream:
                 infos = [
                     f"Photo index: {index}",
-                    "Geste attendu: Victory (V)",
-                    "Bouton ou 'q' pour quitter et enregistrer"
+                    "Geste attendu: Victory (V)"
                 ]
                 if show_frame(
                     display_frame,
@@ -156,7 +139,6 @@ def main(show_stream=True, size=None):
                     break
 
             # 4. Déclenchement de la photo (Geste détecté + Cooldown vérifié)
-            # Note : On a retiré button.is_pressed() ici pour que le bouton serve exclusivement à l'arrêt.
             if gesture_detected and time.time() > cooldown_time:
                 print(f"Geste détecté ! Capture de la photo {index}...")
                 
@@ -225,7 +207,6 @@ def main(show_stream=True, size=None):
             
         led.off()
         camera.stop()
-        button.cleanup()
         led.cleanup()
         hands.close()
         print("Tous les capteurs sont libérés. Données sauvegardées.")
