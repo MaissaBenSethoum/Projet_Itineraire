@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 class EKF:
 
@@ -84,88 +83,49 @@ def meters_to_lat_lon(x,y,ref_lat, ref_lon):
     lat = ref_lat + y / 111139
     lon = ref_lon + x / (111139 * np.cos(np.radians(ref_lat)))
     return lat, lon
-
-def appliquee_efk(df):
-    ref_lat, ref_lon = df['Latitude'].iloc[0], df['Longitude'].iloc[0]
-    ekf = EKF()
-    ekf.x[0:2] = [[0], [0]]
-    results = []
-    utcs = []
-
-    for i in range(1, len(df)):
-        dt = df['Timestamp'].iloc[i] - df['Timestamp'].iloc[i-1]
-        if dt <= 0 or dt > 0.5:
-            continue
-
-        accel  = (df['Accel X'].iloc[i] - 1.0) * 9.81
-        gyro_z = np.radians(df['Gyro Z'].iloc[i])
-
-        ekf.prediction(accel, gyro_z, dt)
-
-        if pd.notnull(df['Latitude'].iloc[i]) and df['GPS Valid'].iloc[i] == 1:
-            mx, my = lat_lon_to_meters(df['Latitude'].iloc[i], df['Longitude'].iloc[i], ref_lat, ref_lon)
-            ekf.miseAJour(np.array([mx, my]))
-
-        results.append(ekf.x.flatten().copy())
-        if 'UTC' in df.columns:
-            utcs.append(df['UTC'].iloc[i])
-
-    return results, ref_lat, ref_lon, utcs
+def _gps_update(ekf, df, i, ref_lat, ref_lon):
+    """Injecte la mesure GPS de la ligne i si elle est nouvelle et valide."""
+    if not (pd.notnull(df['Latitude'].iloc[i]) and df['GPS Valid'].iloc[i] == 1):
+        return
+    lat = df['Latitude'].iloc[i]
+    lon = df['Longitude'].iloc[i]
+    if lat == ekf.last_gps_lat and lon == ekf.last_gps_lon:
+        return
+    mx, my = lat_lon_to_meters(lat, lon, ref_lat, ref_lon)
+    hdop = 1.0
+    if 'HDOP' in df.columns and pd.notnull(df['HDOP'].iloc[i]):
+        hdop = max(0.5, min(float(df['HDOP'].iloc[i]), 50.0))
+    ekf.miseAJour(np.array([mx, my]), hdop=hdop)
+    ekf.last_gps_lat = lat
+    ekf.last_gps_lon = lon
 
 
-def run_kalman(df):
-    raw_results, ref_lat, ref_lon, utcs = appliquee_efk(df)
-
-    df_kalman = pd.DataFrame(raw_results, columns=['X_m', 'Y_m', 'V_ms', 'Theta_rad'])
-
-    lats, lons = [], []
-    for i in range(len(df_kalman)):
-        lat, lon = meters_to_lat_lon(df_kalman['X_m'].iloc[i], df_kalman['Y_m'].iloc[i], ref_lat, ref_lon)
-        lats.append(lat)
-        lons.append(lon)
-
-    result = pd.DataFrame({
-        'Latitude':  lats,
-        'Longitude': lons,
-        'Vitesse':   df_kalman['V_ms'].values,
-        'Cap':       df_kalman['Theta_rad'].values
-    })
-    if utcs:
-        result['UTC'] = utcs
-    return result
-
-# Kalman incrémental pour le online processing (flask_server)
 def run_kalman_incremental(df, ekf, ref_lat, ref_lon):
     """
     Applique l'EKF sur un nouveau batch en réutilisant l'instance EKF existante.
-    ekf.last_gps_lat/lon persistent entre les appels → pas de mise à jour GPS répétée.
+    - Accélération IMU réelle (données déjà corrigées du biais par flask_server).
+    - Gyro Z pour le yaw (cohérent avec run_kalman).
+    - ekf.last_gps_lat/lon persistés entre appels pour éviter les mises à jour GPS doublons.
     """
-    results = []
+    if df.empty:
+        return pd.DataFrame(columns=['Latitude', 'Longitude', 'Vitesse', 'Cap'])
+
+    # La ligne 0 n'a pas de prédiction (pas de dt disponible) mais peut avoir un fix GPS
+    _gps_update(ekf, df, 0, ref_lat, ref_lon)
+
+    results = [ekf.x.flatten().copy()]
 
     for i in range(1, len(df)):
         dt = df['Timestamp'].iloc[i] - df['Timestamp'].iloc[i-1]
 
         if 0 < dt <= 0.5:
-            gyro_yaw = np.radians(df['Gyro X'].iloc[i])
-            ekf.prediction(0.0, gyro_yaw, dt)
+            # Accel X est en g, déjà centré autour de 0 (biais + gravité corrigés en amont)
+            accel = df['Accel X'].iloc[i] * 9.81
+            gyro_yaw = np.radians(df['Gyro Z'].iloc[i])
+            ekf.prediction(accel, gyro_yaw, dt)
 
-        if pd.notnull(df['Latitude'].iloc[i]) and df['GPS Valid'].iloc[i] == 1:
-            lat = df['Latitude'].iloc[i]
-            lon = df['Longitude'].iloc[i]
-
-            if lat != ekf.last_gps_lat or lon != ekf.last_gps_lon:
-                mx, my = lat_lon_to_meters(lat, lon, ref_lat, ref_lon)
-                hdop = 1.0
-                if 'HDOP' in df.columns and pd.notnull(df['HDOP'].iloc[i]):
-                    hdop = max(0.5, min(float(df['HDOP'].iloc[i]), 50.0))
-                ekf.miseAJour(np.array([mx, my]), hdop=hdop)
-                ekf.last_gps_lat = lat
-                ekf.last_gps_lon = lon
-
+        _gps_update(ekf, df, i, ref_lat, ref_lon)
         results.append(ekf.x.flatten().copy())
-
-    if not results:
-        return pd.DataFrame(columns=['Latitude', 'Longitude', 'Vitesse', 'Cap'])
 
     df_kalman = pd.DataFrame(results, columns=['X_m', 'Y_m', 'V_ms', 'Theta_rad'])
     lats = ref_lat + df_kalman['Y_m'] / 111139

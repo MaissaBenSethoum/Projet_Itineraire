@@ -9,20 +9,18 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from scripts.get_sans_flux import get_imu_gps_cam_sans_flux
-from core.imu_gps_acquisition import get_imu_gps_data
 from core.imu_gps_preprocessing import preprocess_imu_gps_df
 from config.constants import LSM6DSO_ADDR, GNSS_DEVICE_ADDR, GNSS_MODES,MAG_ADDR
 from config.parameters import (
     ACCEL_RANGE, ACCEL_FREQ, GYRO_RANGE, GYRO_FREQ,
     MODE_GNSS, MAGNETO_RANGE, MAGNETO_FREQ
 )
-from utils.FiltreKalman import EKF, run_kalman,run_kalman_incremental
+from utils.FiltreKalman import EKF, run_kalman_incremental
 from utils.correction_erreur_systematique import corriger_biais_imu
 
 CSV_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'live.csv')
-IMAGES_DIR = os.path.join(os.path.dirname(__file__), '..', 'images') 
+IMAGES_DIR = os.path.join(os.path.dirname(__file__), '..', 'images')
 
- 
 CONFIG = (int(ACCEL_RANGE), float(ACCEL_FREQ), int(GYRO_RANGE), float(GYRO_FREQ))
 
 app = Flask(__name__)
@@ -32,6 +30,7 @@ last_index = 0
 ekf_instance = EKF()
 ref_lat = None
 ref_lon = None
+stop_event = threading.Event()
 
 @app.route("/")
 def index():
@@ -56,13 +55,18 @@ def data():
         return jsonify({"points": all_points, "current": current})
 
     nouvelles = df.iloc[last_index:]
-    last_index = len(df)
 
     if nouvelles.empty:
         return jsonify({"points": all_points, "current": current})
 
-    nouvelles = corriger_biais_imu(nouvelles.copy(), CONFIG)
-    df_new = preprocess_imu_gps_df(nouvelles)
+    try:
+        nouvelles = corriger_biais_imu(nouvelles.copy(), CONFIG)
+        df_new = preprocess_imu_gps_df(nouvelles)
+    except Exception as e:
+        print(f"Prétraitement échoué : {e}")
+        return jsonify({"points": all_points, "current": current})
+
+    last_index = len(df)
 
     if df_new.empty:
         return jsonify({"points": all_points, "current": current})
@@ -97,9 +101,9 @@ def photos():
         return jsonify([])
     
     for filename in os.listdir(IMAGES_DIR):
-        if not filename.endswith(".png"):
+        if not filename.endswith(".jpg"):
             continue
-        match = re.match(r"^(-?\d+\.?\d*)_(-?\d+\.?\d*)\.png$", filename)
+        match = re.match(r"^image_(-?\d+\.?\d*)_(-?\d+\.?\d*)\.jpg$", filename)
         if match:
             lat, lon = float(match.group(1)), float(match.group(2))
             photos.append({
@@ -110,14 +114,12 @@ def photos():
     
     return jsonify(photos)
 
-
 @app.route("/photo/<filename>")
 def serve_photo(filename):
     """Sert une image individuelle."""
     return send_from_directory(IMAGES_DIR, filename)
 
 if __name__ == "__main__":
-    stop_event = threading.Event()
     acq_thread = threading.Thread(
         target=get_imu_gps_cam_sans_flux,
         kwargs={
@@ -136,7 +138,6 @@ if __name__ == "__main__":
         daemon=True,
     )
     acq_thread.start()
-    print(f"Acquisition démarrée → {CSV_PATH}")
     print("Serveur : http://0.0.0.0:5000")
 
     app.run(host="0.0.0.0", port=5000, debug=False)
