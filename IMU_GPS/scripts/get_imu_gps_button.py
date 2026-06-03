@@ -1,3 +1,12 @@
+"""Script d'acquisition IMU/GNSS contrôlée par un bouton physique.
+
+Fonctionnement :
+1. le programme attend un premier appui sur le bouton ;
+2. la LED s'allume et l'acquisition commence ;
+3. un nouvel appui demande l'arrêt de l'acquisition ;
+4. les ressources GPIO sont libérées dans tous les cas.
+"""
+
 import time
 from config import (
     LSM6DSO_ADDR, ACCEL_RANGE, ACCEL_FREQ,
