@@ -1,10 +1,32 @@
+"""Prétraitement des données d'acquisition IMU/GNSS.
+
+Le module transforme les données brutes en données exploitables pour le filtre de
+Kalman : nettoyage des mesures GPS aberrantes, conversion des champs numériques
+et correction du biais hard iron du magnétomètre.
+"""
+
 import csv
 from pathlib import Path
+
 import pandas as pd
+
 from config.parameters import MAG_BIAS
 
+
 def corriger_magnetometre(rows):
-    """Corrige le décalage hard iron du magnétomètre."""
+    """Corrige le décalage hard iron du magnétomètre.
+
+    Paramètres
+    ----------
+    rows : list[dict]
+        Lignes de données contenant les colonnes ``Magneto X``, ``Magneto Y`` et
+        ``Magneto Z``.
+
+    Retours
+    -------
+    list[dict]
+        Copie des lignes avec les valeurs du magnétomètre corrigées.
+    """
     corrected = []
 
     for row in rows:
@@ -25,7 +47,18 @@ def corriger_magnetometre(rows):
 
 
 def read_imu_gps_csv(csv_path):
-    """Lit un CSV d'acquisition (IMU+GPS) et retourne une liste de dictionnaires."""
+    """Lit un CSV d'acquisition IMU/GNSS.
+
+    Paramètres
+    ----------
+    csv_path : str or pathlib.Path
+        Chemin du fichier CSV à lire.
+
+    Retours
+    -------
+    list[dict]
+        Lignes du CSV sous forme de dictionnaires.
+    """
     csv_path = Path(csv_path)
     rows = []
 
@@ -38,7 +71,17 @@ def read_imu_gps_csv(csv_path):
 
 
 def write_imu_gps_csv(rows, csv_path, fieldnames=None):
-    """Écrit une liste de dictionnaires dans un CSV de sortie."""
+    """Écrit une liste de dictionnaires dans un CSV.
+
+    Paramètres
+    ----------
+    rows : list[dict]
+        Données à écrire.
+    csv_path : str or pathlib.Path
+        Chemin du fichier CSV de sortie.
+    fieldnames : list[str], optional
+        Liste des colonnes à écrire. Si None, les clés de la première ligne sont utilisées.
+    """
     csv_path = Path(csv_path)
     csv_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -52,6 +95,7 @@ def write_imu_gps_csv(rows, csv_path, fieldnames=None):
 
 
 def _parse_float(value, default=None):
+    """Convertit une valeur en flottant, ou retourne une valeur par défaut."""
     try:
         return float(value)
     except (TypeError, ValueError):
@@ -59,7 +103,11 @@ def _parse_float(value, default=None):
 
 
 def clean_rows(rows):
-    """Nettoie les lignes brutes GPS et IMU."""
+    """Nettoie les lignes brutes GPS et IMU.
+
+    Les points GPS marqués valides mais présentant un saut trop important par
+    rapport au point précédent sont invalidés.
+    """
     cleaned = []
     last_lat = None
     last_lon = None
@@ -85,8 +133,9 @@ def clean_rows(rows):
 
     return cleaned
 
+
 def convert_units(rows):
-    """Convertit les champs texte en valeurs numériques exploitables."""
+    """Convertit les champs texte du CSV en valeurs numériques exploitables."""
     converted = []
 
     for row in rows:
@@ -116,16 +165,16 @@ def convert_units(rows):
 
         for col in colonnes_numeriques:
             if col == "Timestamp":
-                new_row[col] = _parse_float(row.get(col),default=0.0)
-
-            elif col == "Nb Satellites":new_row[col] = _parse_float(row.get(col),default=0)
-
+                new_row[col] = _parse_float(row.get(col), default=0.0)
+            elif col == "Nb Satellites":
+                new_row[col] = _parse_float(row.get(col), default=0)
             else:
                 new_row[col] = _parse_float(row.get(col))
 
         gps_valid_raw = row.get("GPS Valid", "0")
-
-        new_row["GPS Valid"] = (1 if str(gps_valid_raw).strip() in {"1", "True", "true", "yes", "OK"}else 0)
+        new_row["GPS Valid"] = (
+            1 if str(gps_valid_raw).strip() in {"1", "True", "true", "yes", "OK"} else 0
+        )
 
         converted.append(new_row)
 
@@ -133,6 +182,11 @@ def convert_units(rows):
 
 
 def preprocess_imu_gps_csv(input_csv, output_csv):
+    """Prétraite un fichier CSV d'acquisition et écrit un nouveau CSV corrigé.
+
+    Cette fonction est utile pour produire un fichier intermédiaire de données
+    nettoyées. Dans le pipeline principal, la version DataFrame est utilisée.
+    """
     rows = read_imu_gps_csv(input_csv)
     rows = clean_rows(rows)
     rows = convert_units(rows)
@@ -140,7 +194,20 @@ def preprocess_imu_gps_csv(input_csv, output_csv):
     write_imu_gps_csv(rows, output_csv)
     return output_csv
 
+
 def preprocess_imu_gps_df(input_df):
+    """Prétraite un DataFrame d'acquisition IMU/GNSS.
+
+    Paramètres
+    ----------
+    input_df : pandas.DataFrame
+        Données brutes ou partiellement corrigées.
+
+    Retours
+    -------
+    pandas.DataFrame
+        Données nettoyées, converties et corrigées côté magnétomètre.
+    """
     rows = input_df.to_dict(orient='records')
     rows = clean_rows(rows)
     rows = convert_units(rows)

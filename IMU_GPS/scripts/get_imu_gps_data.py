@@ -1,3 +1,9 @@
+"""Script d'acquisition IMU/GNSS lancé depuis la ligne de commande.
+
+Ce script démarre directement l'acquisition avec les paramètres définis dans le
+module config. Le mode GNSS et le chemin du CSV de sortie peuvent être modifiés
+avec des arguments de ligne de commande.
+"""
 import argparse
 from config import (
     LSM6DSO_ADDR, ACCEL_RANGE, ACCEL_FREQ,
