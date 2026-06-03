@@ -119,8 +119,7 @@ def run_kalman_incremental(df, ekf, ref_lat, ref_lon):
         dt = df['Timestamp'].iloc[i] - df['Timestamp'].iloc[i-1]
 
         if 0 < dt <= 0.5:
-            # Accel X est en g, déjà centré autour de 0 (biais + gravité corrigés en amont)
-            accel = df['Accel X'].iloc[i] * 9.81
+            accel = (df['Accel X'].iloc[i] - 1.0) * 9.81
             gyro_yaw = np.radians(df['Gyro Z'].iloc[i])
             ekf.prediction(accel, gyro_yaw, dt)
 

@@ -18,7 +18,7 @@ from config.parameters import (
 from utils.FiltreKalman import EKF, run_kalman_incremental
 from utils.correction_erreur_systematique import corriger_biais_imu
 
-CSV_PATH = os.path.join(os.path.dirname(__file__),'data', 'live.csv')
+CSV_PATH = os.path.join(os.path.dirname(__file__), 'data', 'live.csv')
 IMAGES_DIR = os.path.join(os.path.dirname(__file__), 'images')
 
 CONFIG = (int(ACCEL_RANGE), float(ACCEL_FREQ), int(GYRO_RANGE), float(GYRO_FREQ))
@@ -31,10 +31,62 @@ ekf_instance = EKF()
 ref_lat = None
 ref_lon = None
 stop_event = threading.Event()
+stop_event.set()  # arrêté par défaut
+acq_thread = None
 
 @app.route("/")
 def index():
     return render_template("map.html")
+
+
+@app.route("/start", methods=["POST"])
+def start():
+    global acq_thread, stop_event, all_points, last_index, ekf_instance, ref_lat, ref_lon
+
+    if acq_thread is not None and acq_thread.is_alive():
+        return jsonify({"status": "already_running"})
+
+    # Remise à zéro de l'état
+    all_points = []
+    last_index = 0
+    ekf_instance = EKF()
+    ref_lat = None
+    ref_lon = None
+
+    # Supprime le CSV précédent pour repartir propre
+    if os.path.exists(CSV_PATH):
+        os.remove(CSV_PATH)
+    os.makedirs(os.path.dirname(CSV_PATH), exist_ok=True)
+
+    stop_event.clear()
+    acq_thread = threading.Thread(
+        target=get_imu_gps_cam_sans_flux,
+        kwargs={
+            "XL_addr":       LSM6DSO_ADDR,
+            "MAG_addr":      MAG_ADDR,
+            "accel_range":   ACCEL_RANGE,
+            "accel_freq":    ACCEL_FREQ,
+            "gyro_range":    GYRO_RANGE,
+            "gyro_freq":     GYRO_FREQ,
+            "magneto_range": MAGNETO_RANGE,
+            "magneto_freq":  MAGNETO_FREQ,
+            "gnss_addr":     GNSS_DEVICE_ADDR,
+            "gnss_mode":     GNSS_MODES[MODE_GNSS],
+            "csv_out":       CSV_PATH,
+            "stop_event":    stop_event,
+        },
+        daemon=True,
+    )
+    acq_thread.start()
+    print("Acquisition démarrée.")
+    return jsonify({"status": "started"})
+
+
+@app.route("/stop", methods=["POST"])
+def stop():
+    stop_event.set()
+    print("Acquisition arrêtée.")
+    return jsonify({"status": "stopped"})
 
 
 @app.route("/data")
@@ -119,24 +171,6 @@ def serve_photo(filename):
     return send_from_directory(IMAGES_DIR, filename)
 
 if __name__ == "__main__":
-    acq_thread = threading.Thread(
-        target=get_imu_gps_cam_sans_flux,
-        kwargs={
-            "XL_addr":        LSM6DSO_ADDR,
-            "accel_range":    ACCEL_RANGE,
-            "accel_freq":     ACCEL_FREQ,
-            "gyro_range":     GYRO_RANGE,
-            "gyro_freq":      GYRO_FREQ,
-            "gnss_addr":      GNSS_DEVICE_ADDR,
-            "gnss_mode":      GNSS_MODES[MODE_GNSS],
-            "MAG_addr":       MAG_ADDR,
-            "magneto_range":  MAGNETO_RANGE,
-            "magneto_freq":   MAGNETO_FREQ,
-            "stop_event":     stop_event,
-        },
-        daemon=True,
-    )
-    acq_thread.start()
     print("Serveur : http://0.0.0.0:5000")
-
+    print("Cliquer sur Start dans l'interface pour lancer l'acquisition.")
     app.run(host="0.0.0.0", port=5000, debug=False)

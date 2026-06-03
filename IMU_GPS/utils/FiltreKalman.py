@@ -104,7 +104,11 @@ def appliquee_efk(df):
 
         if pd.notnull(df['Latitude'].iloc[i]) and df['GPS Valid'].iloc[i] == 1:
             mx, my = lat_lon_to_meters(df['Latitude'].iloc[i], df['Longitude'].iloc[i], ref_lat, ref_lon)
-            ekf.miseAJour(np.array([mx, my]))
+            if 'HDOP' in df.columns and pd.notnull(df['HDOP'].iloc[i]):
+                hdop = max(0.5, min(float(df['HDOP'].iloc[i]), 50.0))
+            else:
+                hdop = 1.0
+            ekf.miseAJour(np.array([mx, my]), hdop=hdop)
 
         results.append(ekf.x.flatten().copy())
         if 'UTC' in df.columns:
@@ -134,46 +138,3 @@ def run_kalman(df):
         result['UTC'] = utcs
     return result
 
-# Kalman incrémental pour le online processing (flask_server)
-def run_kalman_incremental(df, ekf, ref_lat, ref_lon):
-    """
-    Applique l'EKF sur un nouveau batch en réutilisant l'instance EKF existante.
-    ekf.last_gps_lat/lon persistent entre les appels → pas de mise à jour GPS répétée.
-    """
-    results = []
-
-    for i in range(1, len(df)):
-        dt = df['Timestamp'].iloc[i] - df['Timestamp'].iloc[i-1]
-
-        if 0 < dt <= 0.5:
-            gyro_yaw = np.radians(df['Gyro X'].iloc[i])
-            ekf.prediction(0.0, gyro_yaw, dt)
-
-        if pd.notnull(df['Latitude'].iloc[i]) and df['GPS Valid'].iloc[i] == 1:
-            lat = df['Latitude'].iloc[i]
-            lon = df['Longitude'].iloc[i]
-
-            if lat != ekf.last_gps_lat or lon != ekf.last_gps_lon:
-                mx, my = lat_lon_to_meters(lat, lon, ref_lat, ref_lon)
-                hdop = 1.0
-                if 'HDOP' in df.columns and pd.notnull(df['HDOP'].iloc[i]):
-                    hdop = max(0.5, min(float(df['HDOP'].iloc[i]), 50.0))
-                ekf.miseAJour(np.array([mx, my]), hdop=hdop)
-                ekf.last_gps_lat = lat
-                ekf.last_gps_lon = lon
-
-        results.append(ekf.x.flatten().copy())
-
-    if not results:
-        return pd.DataFrame(columns=['Latitude', 'Longitude', 'Vitesse', 'Cap'])
-
-    df_kalman = pd.DataFrame(results, columns=['X_m', 'Y_m', 'V_ms', 'Theta_rad'])
-    lats = ref_lat + df_kalman['Y_m'] / 111139
-    lons = ref_lon + df_kalman['X_m'] / (111139 * np.cos(np.radians(ref_lat)))
-
-    return pd.DataFrame({
-        'Latitude':  lats.values,
-        'Longitude': lons.values,
-        'Vitesse':   df_kalman['V_ms'].values,
-        'Cap':       df_kalman['Theta_rad'].values
-    })

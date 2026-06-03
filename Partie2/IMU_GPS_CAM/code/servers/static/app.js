@@ -82,7 +82,27 @@
     }
   }
 
-  function lancer_acquisition() {
+  async function lancer_acquisition() {
+    try {
+      const res = await fetch("/start", { method: "POST" });
+      const json = await res.json();
+      if (json.status === "already_running") {
+        console.warn("Acquisition déjà en cours.");
+        return;
+      }
+    } catch (e) {
+      console.error("Erreur /start :", e);
+      return;
+    }
+
+    // Remise à zéro de la carte
+    polyline.setLatLngs([]);
+    if (marker) { map.removeLayer(marker); marker = null; }
+    photoLayer.clearLayers();
+    photosLoaded.clear();
+    statusEl.textContent = "En direct";
+    statusEl.className = "live";
+
     document.getElementById("btn-start").disabled = true;
     document.getElementById("btn-stop").disabled = false;
     document.getElementById("status-label").textContent = "Acquisition en cours...";
@@ -97,11 +117,16 @@
     intervalData = setInterval(fetchData, 1000);
   }
 
-  function arreter_acquisition() {
+  async function arreter_acquisition() {
     clearInterval(intervalData);
     clearInterval(intervalTimer);
     intervalData = null;
     intervalTimer = null;
+    try {
+      await fetch("/stop", { method: "POST" });
+    } catch (e) {
+      console.error("Erreur /stop :", e);
+    }
     finAcquisition();
   }
 

@@ -45,6 +45,7 @@ def get_imu_gps_cam_sans_flux(XL_addr,
                                 magneto_freq,
                                 gnss_addr,
                                 gnss_mode,
+                                csv_out=None,
                                 stop_event=None):
     """
     Fonction cible pour le thread de capture et détection de geste.
@@ -65,7 +66,7 @@ def get_imu_gps_cam_sans_flux(XL_addr,
     cooldown_time = 0 
 
     # --- Lancement de l'acquisition IMU + GPS en tâche de fond ---
-    csv_name = f"data/live.csv"
+    csv_name = csv_out if csv_out is not None else "data/live.csv"
     
     # Condition d'arrêt partagée avec l'IMU
     def imu_stop_condition():

@@ -110,13 +110,17 @@ def get_imu_gps_data(
             start_time = time.time()
             timestamp = time.time()
 
-            accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z, magneto_x, magneto_y, magneto_z = read_IMU(
-                XL_addr,
-                MAG_addr,
-                accel_range,
-                gyro_range,
-                magneto_range
-            )
+            try:
+                accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z, magneto_x, magneto_y, magneto_z = read_IMU(
+                    XL_addr,
+                    MAG_addr,
+                    accel_range,
+                    gyro_range,
+                    magneto_range
+                )
+            except OSError:
+                time.sleep(interval)
+                continue
 
             gnss.update()
 
