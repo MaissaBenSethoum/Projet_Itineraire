@@ -43,7 +43,7 @@ def clean_rows(rows):
     last_lat = None
     last_lon = None
     max_gps_jump = 0.0005
-    valid_flags = {"1", "True", "true", "yes", "OK"}
+    valid_flags = {"1", "1.0", "True", "true", "yes", "OK"}
 
     for row in rows:
         gps_valid = str(row.get("GPS Valid", "0")).strip() in valid_flags
@@ -104,7 +104,7 @@ def convert_units(rows):
 
         gps_valid_raw = row.get("GPS Valid", "0")
 
-        new_row["GPS Valid"] = (1 if str(gps_valid_raw).strip() in {"1", "True", "true", "yes", "OK"}else 0)
+        new_row["GPS Valid"] = (1 if str(gps_valid_raw).strip() in {"1","1.0", "True", "true", "yes", "OK"}else 0)
 
         converted.append(new_row)
 

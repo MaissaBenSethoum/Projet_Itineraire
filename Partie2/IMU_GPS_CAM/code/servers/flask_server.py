@@ -18,8 +18,8 @@ from config.parameters import (
 from utils.FiltreKalman import EKF, run_kalman_incremental
 from utils.correction_erreur_systematique import corriger_biais_imu
 
-CSV_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'live.csv')
-IMAGES_DIR = os.path.join(os.path.dirname(__file__), '..', 'images')
+CSV_PATH = os.path.join(os.path.dirname(__file__),'data', 'live.csv')
+IMAGES_DIR = os.path.join(os.path.dirname(__file__), 'images')
 
 CONFIG = (int(ACCEL_RANGE), float(ACCEL_FREQ), int(GYRO_RANGE), float(GYRO_FREQ))
 
@@ -45,7 +45,6 @@ def data():
     global last_index, all_points, ekf_instance, ref_lat, ref_lon
 
     current = all_points[-1] if all_points else None
-    
     if not os.path.exists(CSV_PATH):
         return jsonify({"points": all_points, "current": current})
 
@@ -74,6 +73,7 @@ def data():
     if ref_lat is None:
         first_valid = df_new[df_new['GPS Valid'] == 1].dropna(subset=['Latitude', 'Longitude'])
         if first_valid.empty:
+            print("Aucune donnée GPS valide pour initialiser le Kalman.")
             return jsonify({"points": all_points, "current": current})
         ref_lat = first_valid['Latitude'].iloc[0]
         ref_lon = first_valid['Longitude'].iloc[0]
@@ -90,7 +90,6 @@ def data():
         all_points.append(pt)
 
     current = all_points[-1] if all_points else None
-
     return jsonify({"points": all_points, "current": current})
 
 @app.route("/photos")

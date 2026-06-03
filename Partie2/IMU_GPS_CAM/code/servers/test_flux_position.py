@@ -21,13 +21,13 @@ from core.display import show_frame
 # Imports de la partie IMU / GNSS / Traitement
 from core.imu_gps_acquisition import get_imu_gps_data, get_imu_gps_long_lat
 from core.imu_gps_preprocessing import preprocess_imu_gps_df
-from config.constants import LSM6DSO_ADDR, GNSS_DEVICE_ADDR, GNSS_MODES, MAG_ADDR
+from config.constants import LSM6DSO_ADDR, GNSS_DEVICE_ADDR, GNSS_MODES, MAG_ADDR,PORT_LED,DISPLAY_SIZE
 from config.parameters import (
     ACCEL_RANGE, ACCEL_FREQ, GYRO_RANGE, GYRO_FREQ,
-    MODE_GNSS, MAGNETO_RANGE, MAGNETO_FREQ, PORT_LED, DISPLAY_SIZE
+    MODE_GNSS, MAGNETO_RANGE, MAGNETO_FREQ
 )
-from IMU_GPS.utils.FiltreKalman import EKF, run_kalman_incremental
-from IMU_GPS.utils.correction_erreur_systematique import corriger_biais_imu
+from utils.FiltreKalman import EKF, run_kalman_incremental
+from utils.correction_erreur_systematique import corriger_biais_imu
 
 # Configuration des chemins
 CSV_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'live.csv')
