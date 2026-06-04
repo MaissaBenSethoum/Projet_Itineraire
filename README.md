@@ -77,12 +77,57 @@ sudo reboot
 
 ### Partie 1 — Acquisition IMU + GNSS seule
 
+#### Acquisition
+
 ```bash
 cd IMU_GPS/scripts
-python main.py
+python get_imu_gps_button.py
 ```
 
 Appuyez sur le bouton pour démarrer / arrêter l'acquisition. Les données sont sauvegardées dans `data/`.
+
+#### Conversion GPX ↔ CSV
+
+Le script `IMU_GPS/utils/conversion_gpx.py` convertit des traces GPX (Strava, etc.) en CSV exploitable, et inversement. La détection du sens est automatique selon l'extension du fichier d'entrée.
+
+```bash
+cd IMU_GPS/utils
+
+# GPX → CSV (extrait UTC, Latitude, Longitude)
+python conversion_gpx.py <trace.gpx> <sortie.csv>
+
+# CSV → GPX
+python conversion_gpx.py <donnees.csv> <sortie.gpx>
+```
+
+Le CSV produit contient trois colonnes : `UTC`, `Latitude`, `Longitude`. Le format UTC est `YYYY/MM/DD - HH:MM:SS`.
+
+#### Traçage de la carte
+
+Le script `IMU_GPS/scripts/main.py` génère une carte HTML interactive (Folium / OpenStreetMap) comparant la trajectoire acquise, la trajectoire filtrée par l'EKF et la trace Strava de référence.
+
+**Mode `run` — pipeline complet (correction biais → Kalman → carte) :**
+
+```bash
+cd IMU_GPS/scripts
+python main.py --mode run <acquisition.csv> --savepath_strava <strava.csv> <carte_sortie.html>
+```
+
+**Mode `apk` — applique uniquement le filtre de Kalman sur un CSV déjà traité :**
+
+```bash
+python main.py --mode apk <traite.csv> <kalman_sortie.csv>
+```
+
+La carte HTML générée superpose trois tracés :
+
+| Couleur | Données |
+|---|---|
+| Bleu | Trajectoire filtrée Kalman |
+| Rouge | Référence Strava |
+| Vert | GPS brut |
+
+Ouvrir le fichier `.html` directement dans un navigateur pour visualiser la carte.
 
 ### Partie 2 — Acquisition IMU + GNSS + Caméra avec déclenchement par geste
 
