@@ -83,8 +83,10 @@ def meters_to_lat_lon(x,y,ref_lat, ref_lon):
     lat = ref_lat + y / 111139
     lon = ref_lon + x / (111139 * np.cos(np.radians(ref_lat)))
     return lat, lon
+_MAX_GPS_JUMP_M = 50.0  # rejette tout point GPS à plus de 50 m de l'état EKF prédit
+
 def _gps_update(ekf, df, i, ref_lat, ref_lon):
-    """Injecte la mesure GPS de la ligne i si elle est nouvelle et valide."""
+    """Injecte la mesure GPS de la ligne i si elle est nouvelle, valide et cohérente."""
     if not (pd.notnull(df['Latitude'].iloc[i]) and df['GPS Valid'].iloc[i] == 1):
         return
     lat = df['Latitude'].iloc[i]
@@ -92,6 +94,9 @@ def _gps_update(ekf, df, i, ref_lat, ref_lon):
     if lat == ekf.last_gps_lat and lon == ekf.last_gps_lon:
         return
     mx, my = lat_lon_to_meters(lat, lon, ref_lat, ref_lon)
+    dist = np.sqrt((mx - ekf.x[0, 0])**2 + (my - ekf.x[1, 0])**2)
+    if dist > _MAX_GPS_JUMP_M:
+        return
     hdop = 1.0
     if 'HDOP' in df.columns and pd.notnull(df['HDOP'].iloc[i]):
         hdop = max(0.5, min(float(df['HDOP'].iloc[i]), 50.0))

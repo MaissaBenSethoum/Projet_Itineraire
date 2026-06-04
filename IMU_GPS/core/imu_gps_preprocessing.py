@@ -111,7 +111,7 @@ def clean_rows(rows):
     cleaned = []
     last_lat = None
     last_lon = None
-    max_gps_jump = 0.0005
+    max_gps_jump = 0.0004
     valid_flags = {"1", "True", "true", "yes", "OK"}
 
     for row in rows:
